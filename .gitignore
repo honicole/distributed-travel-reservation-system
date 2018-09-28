@@ -1,0 +1,6 @@
+
+*.class
+
+Client/java\.policy
+
+Server/RMIInterface\.jar
