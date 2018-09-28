@@ -4,3 +4,7 @@
 Client/java\.policy
 
 Server/RMIInterface\.jar
+
+\.classpath
+
+Server/java\.policy

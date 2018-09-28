@@ -7,7 +7,7 @@ package Server.Common;
 
 public class Flight extends ReservableItem {
   public Flight(int flightNum, int flightSeats, int flightPrice) {
-    super(new Integer(flightNum).toString(), flightSeats, flightPrice);
+    super(Integer.valueOf(flightNum).toString(), flightSeats, flightPrice);
   }
 
   public String getKey() {
