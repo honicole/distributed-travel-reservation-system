@@ -1,0 +1,3 @@
+grant codebase "file:/home/hp/Documents/Fall2018/Comp512/Project/Template/comp512-project/Server/" {
+permission java.security.AllPermission;
+};

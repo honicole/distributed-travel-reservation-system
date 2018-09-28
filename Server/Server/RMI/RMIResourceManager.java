@@ -20,7 +20,7 @@ public class RMIResourceManager extends ResourceManager {
   private static String s_serverName = "Server";
   private static String s_rmiPrefix = "group3_";
 
-  public static void main(String args[]) {
+  public static void main(String[] args) {
     if (args.length > 0) {
       s_serverName = args[0];
     }
