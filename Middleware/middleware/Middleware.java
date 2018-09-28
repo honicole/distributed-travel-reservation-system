@@ -3,13 +3,21 @@ package middleware;
 import java.rmi.RemoteException;
 import java.util.Vector;
 
+import Server.Common.ResourceManager;
+
 import Server.Interface.IResourceManager;
 
 public class Middleware implements IResourceManager {
   
+  ResourceManager[] resourceManagers;
+  
+  public Middleware(ResourceManager... resourceManagers) {
+    this.resourceManagers = resourceManagers;
+  }
+  
   // This is here for testing
   public static void main(String[] args) {
-    
+    System.out.println("Hi");
   }
 
   @Override
