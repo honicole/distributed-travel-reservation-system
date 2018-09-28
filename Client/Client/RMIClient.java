@@ -7,9 +7,6 @@ import java.rmi.registry.Registry;
 import java.rmi.RemoteException;
 import java.rmi.NotBoundException;
 
-import java.util.*;
-import java.io.*;
-
 public class RMIClient extends Client {
   private static String s_serverHost = "localhost";
   private static int s_serverPort = 1099;
@@ -61,13 +58,13 @@ public class RMIClient extends Client {
         try {
           Registry registry = LocateRegistry.getRegistry(server, port);
           m_resourceManager = (IResourceManager) registry.lookup(s_rmiPrefix + name);
-          System.out.println("Connected to '" + name 
-              + "' server [" + server + ":" + port + "/" + s_rmiPrefix + name + "]");
+          System.out
+              .println("Connected to '" + name + "' server [" + server + ":" + port + "/" + s_rmiPrefix + name + "]");
           break;
         } catch (NotBoundException | RemoteException e) {
           if (first) {
-            System.out.println("Waiting for '" + name 
-                + "' server [" + server + ":" + port + "/" + s_rmiPrefix + name + "]");
+            System.out
+                .println("Waiting for '" + name + "' server [" + server + ":" + port + "/" + s_rmiPrefix + name + "]");
             first = false;
           }
         }
