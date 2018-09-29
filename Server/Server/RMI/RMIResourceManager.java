@@ -5,8 +5,8 @@
 
 package Server.RMI;
 
-import Server.Interface.*;
 import Server.Common.*;
+import Server.Interface.IResourceManager;
 
 import java.rmi.NotBoundException;
 import java.util.*;

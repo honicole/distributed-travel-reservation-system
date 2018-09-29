@@ -3,15 +3,13 @@ package middleware;
 import java.rmi.RemoteException;
 import java.util.Vector;
 
-import Server.Common.ResourceManager;
-
-import Server.Interface.IResourceManager;
+import middleware.Interface.IResourceManager;
 
 public class Middleware implements IResourceManager {
   
-  ResourceManager[] resourceManagers;
+  IResourceManager[] resourceManagers;
   
-  public Middleware(ResourceManager... resourceManagers) {
+  public Middleware(IResourceManager... resourceManagers) {
     this.resourceManagers = resourceManagers;
   }
   
