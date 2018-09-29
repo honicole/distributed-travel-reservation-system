@@ -1,8 +1,9 @@
 package Client;
 
-import Server.Interface.*;
-
 import java.util.*;
+
+import Server.Interface.IResourceManager;
+
 import java.io.*;
 import java.rmi.RemoteException;
 import java.rmi.ConnectException;

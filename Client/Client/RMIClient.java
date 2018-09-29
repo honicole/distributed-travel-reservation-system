@@ -1,9 +1,10 @@
 package Client;
 
-import Server.Interface.*;
-
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+
+import Server.Interface.IResourceManager;
+
 import java.rmi.RemoteException;
 import java.rmi.NotBoundException;
 

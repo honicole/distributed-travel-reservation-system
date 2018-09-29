@@ -3,7 +3,7 @@ package middleware;
 import java.rmi.RemoteException;
 import java.util.Vector;
 
-import Server.Interface.IResourceManager;
+import middleware.Interface.IResourceManager;
 
 public class CarResourceManager implements IResourceManager {
 
