@@ -12,7 +12,7 @@ FORCE: ;
 	make -C ../Server/ RMIInterface.jar
 
 compile-client: ../Server/RMIInterface.jar
-	javac -Xlint:deprecation -cp ../Server/RMIInterface.jar Client/*.java
+	javac -d ../bin -Xlint:deprecation -cp ../Server/RMIInterface.jar Client/*.java
 
 clean:
 	rm -f Client/*.class
