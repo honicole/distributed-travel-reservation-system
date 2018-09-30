@@ -1,1 +1,1 @@
-rmiregistry -J-Djava.rmi.server.useCodebaseOnly=false 1099 &
+rmiregistry -J-Djava.rmi.server.useCodebaseOnly=false -J-Djava.class.path=../bin 1099 &
