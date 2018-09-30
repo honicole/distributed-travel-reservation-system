@@ -7,6 +7,13 @@ import middleware.Interface.IResourceManager;
 
 public class FlightResourceManager implements IResourceManager {
 
+  private String name;
+  
+  public FlightResourceManager(String name) {
+    this.name = name;
+  }
+
+  
   // TODO Implement these methods
   @Override
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException {
@@ -61,7 +68,7 @@ public class FlightResourceManager implements IResourceManager {
 
   @Override
   public String getName() throws RemoteException {
-    return null;
+    return name;
   }
   
   

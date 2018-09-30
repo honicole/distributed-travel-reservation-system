@@ -7,6 +7,13 @@ import middleware.Interface.IResourceManager;
 
 public class RoomResourceManager implements IResourceManager {
   
+  private String name;
+  
+  public RoomResourceManager(String name) {
+    this.name = name;
+  }
+
+  
   // TODO Implement these methods
   @Override
   public boolean addRooms(int id, String location, int numRooms, int price) throws RemoteException {
@@ -61,7 +68,7 @@ public class RoomResourceManager implements IResourceManager {
 
   @Override
   public String getName() throws RemoteException {
-    return null;
+    return name;
   }
   
   

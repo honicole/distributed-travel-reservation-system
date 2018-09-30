@@ -6,6 +6,12 @@ import java.util.Vector;
 import middleware.Interface.IResourceManager;
 
 public class CarResourceManager implements IResourceManager {
+  
+  private String name;
+
+  public CarResourceManager(String name) {
+    this.name = name;
+  }
 
   // TODO Implement these methods
   @Override
@@ -61,7 +67,7 @@ public class CarResourceManager implements IResourceManager {
 
   @Override
   public String getName() throws RemoteException {
-    return null;
+    return name;
   }
   
   

@@ -13,10 +13,6 @@ public class Middleware implements IResourceManager {
     this.resourceManagers = resourceManagers;
   }
   
-  // This is here for testing
-  public static void main(String[] args) {
-    System.out.println("Hi");
-  }
 
   @Override
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException {
