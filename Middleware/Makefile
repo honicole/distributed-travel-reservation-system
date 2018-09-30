@@ -1,4 +1,4 @@
-all: java.policy compile-middleware-rmi
+all: java.policy compile-middleware-rmi RMIInterface.jar
 
 java.policy: FORCE
 	@echo "Creating middleware java policy"
@@ -8,13 +8,13 @@ java.policy: FORCE
 
 FORCE: ;
 
-RMIInterface.jar: middleware/Interface/IResourceManager.java
-	@echo "Compiling RMI middleware interface"
-	javac middleware/Interface/IResourceManager.java
-	jar cvf RMIInterface.jar middleware/Interface/IResourceManager.class
-
 compile-middleware-rmi: middleware/*.java middleware/Interface/IResourceManager.java
 	javac -d ../bin -Xlint:deprecation middleware/*.java middleware/Interface/IResourceManager.java
+
+RMIInterface.jar: middleware/Interface/IResourceManager.java
+	@echo "Compiling RMI middleware interface"
+	@echo `pwd`
+	jar cvf RMIInterface.jar ../bin/middleware/Interface/IResourceManager.class
 
 clean:
 	rm -f middleware/Interface/*.class middleware/*.class
