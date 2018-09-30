@@ -16,8 +16,8 @@ public class Middleware implements IResourceManager {
 
   @Override
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException {
-    // TODO Auto-generated method stub
-    return false;
+    // for testing purposes only
+    return true;
   }
 
   @Override
