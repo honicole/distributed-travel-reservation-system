@@ -8,6 +8,7 @@ package Server.Common;
 import java.util.*;
 
 import Server.Interface.IResourceManager;
+import Server.Common.RMHashMap;
 
 import java.rmi.RemoteException;
 import java.io.*;

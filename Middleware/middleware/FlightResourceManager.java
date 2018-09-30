@@ -3,7 +3,7 @@ package middleware;
 import java.rmi.RemoteException;
 import java.util.Vector;
 
-import middleware.Interface.IResourceManager;
+import Server.Interface.IResourceManager;
 
 public class FlightResourceManager implements IResourceManager {
 

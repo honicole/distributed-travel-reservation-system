@@ -5,7 +5,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-import middleware.Interface.IResourceManager;
+import Server.Interface.IResourceManager;
 
 //import middleware.Interface.IResourceManager;
 //import Server.RMI.RMIResourceManager;
