@@ -7,7 +7,6 @@ import java.rmi.server.UnicastRemoteObject;
 
 import Server.Interface.IResourceManager;
 
-//import middleware.Interface.IResourceManager;
 //import Server.RMI.RMIResourceManager;
 
 public class RMIMiddleware extends Middleware {

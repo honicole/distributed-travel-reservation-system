@@ -1,4 +1,19 @@
-all: java.policy compile-server-rmi RMIInterface.jar
+# Server makefile
+#
+# Instructions for humans:
+# 
+# This makefile is supposed to be run from comp512-project/Server.
+#
+# It is supposed to:
+# * Clean the previous build:
+#   o Remove comp512-project/Server/java.policy
+#   o Remove comp512-project/bin/Server (thus removing compiled files).
+# * Make the java.policy file in comp512-project/Server.
+# * Prepare the RMIInterface.jar dependency. This done via the Middleware makefile.
+# * Take the Server files in comp512-project/Server and then compile them into comp512-project/bin/Server.
+#
+
+all: clean java.policy compile-server-rmi
 
 java.policy: FORCE
 	@echo "Creating server java policy"
@@ -8,15 +23,16 @@ java.policy: FORCE
 
 FORCE: ;
 
-RMIInterface.jar: ../Middleware/Server/Interface/IResourceManager.java
-	@echo "Compiling RMI server interface"
-	javac ../Middleware/Server/Interface/IResourceManager.java
-	jar cvf RMIInterface.jar ../Middleware/Server/Interface/IResourceManager.class
+RMIInterface: ../Middleware/Server/Interface/IResourceManager.java
+	cd ../Middleware; make -B RMIInterface.jar
 
-compile-server-rmi: Server/RMI/*.java ../Middleware/Server/Interface/IResourceManager.java Server/Common/*.java
-	javac -d ../bin -Xlint:deprecation Server/RMI/*.java ../Middleware/Server/Interface/IResourceManager.java Server/Common/*.java
+compile-server-rmi: RMIInterface ../Middleware/Server/Interface/IResourceManager.java Server/Common/*.java
+	@echo "Compiling server..."
+	@if [ ! -d ../bin ]; then mkdir ../bin; fi
+	@if [ ! -d ../bin/Server ]; then mkdir ../bin/Server; fi
+	@if [ ! -d ../bin/Server/Common ]; then mkdir ../bin/Server/Common; fi
+	cd ..; javac -d ./bin -Xlint:deprecation -cp .:./bin/middleware Server/Server/Common/*.java
 
 clean:
-	rm -f Server/Interface/*.class Server/Common/*.class Server/RMI/*.class
-	rm -f RMIInterface.jar
+	rm -rf ../bin/Server
 	rm -f java.policy 

@@ -6,5 +6,6 @@ if [[ "$#" -ne 4 ]]; then
   exit 1
 fi
 
-java -Djava.security.policy=java.policy -Djava.rmi.server.codebase=file:"$(pwd)/" -classpath ../bin \
+java -Djava.security.policy=java.policy -Djava.rmi.server.codebase=file:"$(pwd)/" \
+ -classpath ../bin:../bin/middleware \
 middleware.RMIMiddleware $1 $2 $3 $4
