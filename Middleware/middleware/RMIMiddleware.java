@@ -17,8 +17,11 @@ public class RMIMiddleware extends Middleware {
   
   private String name;
   
-  public RMIMiddleware(String name) {
-    super(new FlightResourceManager("Flights"), new CarResourceManager("Cars"), new RoomResourceManager("Rooms"));
+  
+  public RMIMiddleware(String name, String[] resourceManagerNames) {
+    super(new FlightResourceManager(resourceManagerNames[1]),
+          new CarResourceManager(resourceManagerNames[2]),
+          new RoomResourceManager(resourceManagerNames[3]));
     this.name = name;
   }
 
@@ -32,7 +35,7 @@ public class RMIMiddleware extends Middleware {
     // Create the RMI server entry
     try {
       // Create a new Server object
-      IResourceManager server = new RMIMiddleware(s_serverName);
+      IResourceManager server = new RMIMiddleware(s_serverName, args);
 
       // Dynamically generate the stub (client proxy)
       IResourceManager resourceManager = (IResourceManager) UnicastRemoteObject.exportObject(server, 0);

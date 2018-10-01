@@ -11,6 +11,9 @@ FORCE: ;
 
 compile-middleware-rmi: middleware/*.java Server/Interface/IResourceManager.java
 	javac -d ../bin -Xlint:deprecation middleware/*.java Server/Interface/IResourceManager.java
+	@if [ ! -d ../bin/middleware/Server ]; then mkdir ../bin/middleware/Server; fi
+	@if [ ! -d ../bin/middleware/Server/Interface ]; then mkdir ../bin/middleware/Server/Interface; fi
+	cp ../bin/Server/Interface/IResourceManager.class ../bin/middleware/Server/Interface
 
 RMIInterface.jar: Server/Interface/IResourceManager.java
 	@echo "Compiling RMI server interface for middleware"
