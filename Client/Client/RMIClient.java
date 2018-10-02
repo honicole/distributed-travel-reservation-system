@@ -52,20 +52,20 @@ public class RMIClient extends Client {
     connectServer(s_serverHost, s_serverPort, s_serverName);
   }
 
-  public void connectServer(String server, int port, String name) {
+  public void connectServer(String server, int port, String name) { System.out.printf("connectServer() called with server: %s, port: %d, name: %s",server,port,name);
     try {
       boolean first = true;
       while (true) {
         try {
-          Registry registry = LocateRegistry.getRegistry(server, port);
-          m_resourceManager = (IResourceManager) registry.lookup(s_rmiPrefix + name);
+          Registry registry = LocateRegistry.getRegistry(server, port); System.out.println("\nGot the registry: "+registry.toString()+"\n");
+            m_resourceManager = (IResourceManager) registry.lookup(s_rmiPrefix + name);
           System.out
               .println("Connected to '" + name + "' server [" + server + ":" + port + "/" + s_rmiPrefix + name + "]");
           break;
-        } catch (NotBoundException | RemoteException e) {
+        } catch (NotBoundException | RemoteException e) { e.printStackTrace(); System.exit(1);
           if (first) {
             System.out
-                .println("Waiting for '" + name + "' server [" + server + ":" + port + "/" + s_rmiPrefix + name + "]");
+                .println("Waiting for '" + name + "' server: [" + server + ":" + port + "/" + s_rmiPrefix + name + "]");
             first = false;
           }
         }
