@@ -37,9 +37,11 @@ makeserver:
 
 compile-middleware-rmi: middleware/*.java Server/RMI/RMIResourceManager.java RMIInterface.jar
 	@echo "Compiling middleware..."
-	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin/middleware Middleware/middleware/*.java
+	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin:./bin/middleware \
+	  Middleware/Server/Common/ResourceManager.java
 	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin:./bin/middleware \
 	  Middleware/Server/RMI/RMIResourceManager.java
+	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin/middleware:./bin/middleware/ Middleware/middleware/*.java
 
 RMIInterface.jar: ./Server/Interface/IResourceManager.java
 	@echo "Compiling RMI server interface for middleware"

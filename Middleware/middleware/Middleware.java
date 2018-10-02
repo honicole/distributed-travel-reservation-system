@@ -17,7 +17,7 @@ public class Middleware implements IResourceManager {
   @Override
   public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException {
     // for testing purposes only
-    return true;
+    return true; // return FRM.addFlight(same params)
   }
 
   @Override

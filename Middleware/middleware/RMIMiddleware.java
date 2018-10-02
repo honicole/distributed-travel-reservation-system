@@ -6,8 +6,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 import Server.Interface.IResourceManager;
-
-//import Server.RMI.RMIResourceManager;
+import Server.RMI.RMIResourceManager;
 
 public class RMIMiddleware extends Middleware {
 
@@ -18,9 +17,9 @@ public class RMIMiddleware extends Middleware {
   
   
   public RMIMiddleware(String name, String[] resourceManagerNames) {
-    super(new FlightResourceManager(resourceManagerNames[1]),
-          new CarResourceManager(resourceManagerNames[2]),
-          new RoomResourceManager(resourceManagerNames[3]));
+    super(new RMIResourceManager(resourceManagerNames[1]),
+          new RMIResourceManager(resourceManagerNames[2]),
+          new RMIResourceManager(resourceManagerNames[3]));
     this.name = name;
   }
 
