@@ -36,12 +36,12 @@ makeserver:
 	@cd ../Server; make
 	@echo "Finished making Server."
 
-compile-middleware-rmi: middleware/*.java Server/RMI/RMIResourceManager.java RMIInterface.jar
+compile-middleware-rmi: middleware/*.java Server/TCP/TCPResourceManager.java RMIInterface.jar
 	@echo "Compiling middleware..."
 	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin:./bin/middleware \
 	  Middleware/Server/Common/ResourceManager.java
 	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin:./bin/middleware \
-	  Middleware/Server/RMI/RMIResourceManager.java
+	  Middleware/Server/TCP/TCPResourceManager.java
 	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin/middleware:./bin/middleware:./bin \
 	  Middleware/middleware/*.java
 

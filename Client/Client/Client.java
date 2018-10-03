@@ -17,8 +17,6 @@ public abstract class Client {
     super();
   }
 
-  public abstract void connectServer();
-
   public void start() {
     // Prepare for reading commands
     System.out.println();
@@ -40,12 +38,12 @@ public abstract class Client {
       }
 
       try {
+       
         arguments = parse(command);
         Command cmd = Command.fromString((String) arguments.elementAt(0));
         try {
           execute(cmd, arguments);
         } catch (ConnectException e) {
-          connectServer();
           execute(cmd, arguments);
         }
       } catch (IllegalArgumentException | ServerException e) {
