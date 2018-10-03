@@ -6,7 +6,6 @@ import java.net.Socket;
 public class TCPClient extends Client {
   private static String s_serverHost = "localhost";
   private static int s_serverPort = 1099;
-  private static Socket socket;
 
   public static void main(String args[]) {
     if (args.length > 0) {
@@ -27,10 +26,10 @@ public class TCPClient extends Client {
     }
 
     try {
+      System.out.println("Calling new TCPClient(host: " + s_serverHost
+          + ", " + s_serverPort);
       TCPClient client = new TCPClient(s_serverHost, s_serverPort);
-      PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-      out.println("Hello world");
-      out.flush();
+      
       //client.start();
     } catch (Exception e) {
       System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27 + "[0mUncaught exception");
@@ -38,6 +37,8 @@ public class TCPClient extends Client {
       System.exit(1);
     }
   }
+
+  private Socket socket;
 
   public TCPClient(String host, int port) throws Exception {
     super();
