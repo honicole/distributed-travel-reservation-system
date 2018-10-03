@@ -11,7 +11,7 @@ import Server.RMI.RMIResourceManager;
 
 public class RMIMiddleware extends Middleware {
 
-  private static String s_serverHost = "localhost";
+  private static String[] s_serverHosts = new String[] {"localhost", "localhost", "localhost"};
   private static int s_serverPort = 1099;
   private static String s_serverName = "Middleware";
   private static String s_rmiPrefix = "group3_";
@@ -19,12 +19,13 @@ public class RMIMiddleware extends Middleware {
   private String[] serverNames;
   
   
-  public RMIMiddleware(String name, String[] resourceManagerNames) {
-    super(new RMIResourceManager(resourceManagerNames[1]),
-          new RMIResourceManager(resourceManagerNames[2]),
-          new RMIResourceManager(resourceManagerNames[3]));
+  public RMIMiddleware(String name, String[] args) {
+    super(new RMIResourceManager(args[2]),
+          new RMIResourceManager(args[4]),
+          new RMIResourceManager(args[6]));
     this.name = name;
-    serverNames = new String[] {resourceManagerNames[1], resourceManagerNames[2], resourceManagerNames[3]};
+    s_serverHosts = new String[] {args[1], args[3], args[5]};
+    serverNames = new String[] {args[2], args[4], args[6]};
   }
 
   public static void main(String[] args) {
@@ -85,51 +86,51 @@ public class RMIMiddleware extends Middleware {
   }
   
   public void connectServers() {
-    connectServer(s_serverHost, s_serverPort, serverNames);
+    connectServer(s_serverHosts, s_serverPort, serverNames);
   }
 
-  public void connectServer(String server, int port, String[] names) {
+  public void connectServer(String[] servers, int port, String[] names) {
     try {
       boolean firstConnAttemptFlight = true;
       boolean firstConnAttemptCar = true;
       boolean firstConnAttemptRoom = true;
       while (true) {
         try {
-          Registry registry = LocateRegistry.getRegistry(server, port);
+          Registry registry = LocateRegistry.getRegistry(servers[0], port);
           flightManager = (IResourceManager) registry.lookup(s_rmiPrefix + names[0]);
           
-          System.out.println("Connected to '" + names[0] + "' server [" + server + ":" 
+          System.out.println("Connected to '" + names[0] + "' server [" + servers[0] + ":" 
               + port + "/" + s_rmiPrefix + names[0] + "]");
         } catch (NotBoundException | RemoteException e) {
           if (firstConnAttemptFlight) {
-            System.out.println("Waiting for '" + names[0] + "' server [" + server + ":" 
+            System.out.println("Waiting for '" + names[0] + "' server [" + servers[0] + ":" 
                 + port + "/" + s_rmiPrefix + names[0] + "]");
             firstConnAttemptFlight = false;
           }
         }
         try {
-          Registry registry = LocateRegistry.getRegistry(server, port);
+          Registry registry = LocateRegistry.getRegistry(servers[1], port);
           carManager = (IResourceManager) registry.lookup(s_rmiPrefix + names[1]);
           
-          System.out.println("Connected to '" + names[1] + "' server [" + server + ":" 
+          System.out.println("Connected to '" + names[1] + "' server [" + servers[1] + ":" 
               + port + "/" + s_rmiPrefix + names[1] + "]");
         } catch (NotBoundException | RemoteException e) {
           if (firstConnAttemptCar) {
-            System.out.println("Waiting for '" + names[1] + "' server [" + server + ":" 
+            System.out.println("Waiting for '" + names[1] + "' server [" + servers[1] + ":" 
                 + port + "/" + s_rmiPrefix + names[1] + "]");
             firstConnAttemptCar = false;
           }
         }
         try {
-          Registry registry = LocateRegistry.getRegistry(server, port);
+          Registry registry = LocateRegistry.getRegistry(servers[2], port);
           roomManager = (IResourceManager) registry.lookup(s_rmiPrefix + names[2]);
           
-          System.out.println("Connected to '" + names[2] + "' server [" + server + ":" 
+          System.out.println("Connected to '" + names[2] + "' server [" + servers[2] + ":" 
               + port + "/" + s_rmiPrefix + names[2] + "]");
           break;
         } catch (NotBoundException | RemoteException e) {
           if (firstConnAttemptRoom) {
-            System.out.println("Waiting for '" + names[2] + "' server [" + server + ":" 
+            System.out.println("Waiting for '" + names[2] + "' server [" + servers[2] + ":" 
                 + port + "/" + s_rmiPrefix + names[2] + "]");
             firstConnAttemptRoom = false;
           }
