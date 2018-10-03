@@ -1,8 +1,9 @@
 ./run_rmi.sh > /dev/null 2>&1
 
-if [[ "$#" -ne 4 ]]; then
-  echo "Usage: bash run_middleware.sh <Name of middleware server>\
-  <hostname of Flights> <hostname of Cars> <hostname of Rooms>"
+if [[ "$#" -ne 7 ]]; then
+  echo "Usage: bash run_middleware.sh <Name of middleware server> \
+  <hostname of Flights> <Flights server name>   <hostname of Cars> <Cars server name> \
+  <hostname of Rooms> <Rooms server name>"
   exit 1
 fi
 
