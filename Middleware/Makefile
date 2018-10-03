@@ -4,6 +4,7 @@
 # 
 # This makefile is supposed to be run from comp512-project/Middleware.
 # The final outcome depends on the output of making Server, which depends on RMIInterface that is built here.
+# It also depends on the client being built.
 #
 # It is supposed to:
 # * Clean the previous build:
@@ -41,7 +42,8 @@ compile-middleware-rmi: middleware/*.java Server/RMI/RMIResourceManager.java RMI
 	  Middleware/Server/Common/ResourceManager.java
 	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin:./bin/middleware \
 	  Middleware/Server/RMI/RMIResourceManager.java
-	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin/middleware:./bin/middleware/ Middleware/middleware/*.java
+	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin/middleware:./bin/middleware:./bin \
+	  Middleware/middleware/*.java
 
 RMIInterface.jar: ./Server/Interface/IResourceManager.java
 	@echo "Compiling RMI server interface for middleware"
