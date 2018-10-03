@@ -9,8 +9,6 @@ tmux new-session \; \
 	split-window -v \; \
 	split-window -v \; \
 	select-layout main-vertical \; \
-	select-pane -t 0 \; \
-	send-keys "\"cd $(pwd)/Client > /dev/null; echo -n 'Connected to '; hostname; ./run_client.sh ${MACHINES[3]} middleware\"" C-m \; \
 	select-pane -t 2 \; \
 	send-keys "ssh -t ${MACHINES[0]} \"cd $(pwd)/Server > /dev/null; echo -n 'Connected to '; hostname; ./run_server.sh Flights\"" C-m \; \
 	select-pane -t 3 \; \
