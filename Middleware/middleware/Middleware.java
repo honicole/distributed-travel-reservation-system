@@ -40,9 +40,10 @@ public class Middleware implements IResourceManager {
 
   @Override
   public int newCustomer(int id) throws RemoteException {
-    flightManager.newCustomer(id);
-    carManager.newCustomer(id);
-    return roomManager.newCustomer(id);
+    int cid = flightManager.newCustomer(id);
+    carManager.newCustomer(id, cid);
+    roomManager.newCustomer(id, cid);
+    return cid;
   }
 
   @Override
@@ -125,6 +126,7 @@ public class Middleware implements IResourceManager {
   public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location, boolean car,
       boolean room) throws RemoteException {
     boolean flightsReserved = true, carReserved = true, roomReserved = true;
+
     for (String flightNumber : flightNumbers) {
       flightsReserved = flightManager.reserveFlight(id, customerID, Integer.valueOf(flightNumber));
       if (!flightsReserved) {

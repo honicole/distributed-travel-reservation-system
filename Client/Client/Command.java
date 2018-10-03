@@ -28,7 +28,7 @@ public enum Command {
   ReserveRoom("Reserve a room for a customer at a location", "<xid>,<CustomerID>,<Location>"),
 
   Bundle("Book N flight numbers, and optionally a room and/or car at a location",
-      "<xid>,<CustomerID>,<FlightNumber1>...<FlightNumberN>,<Location>,<Car-Y/N>,<Room-Y/N>"),
+      "<xid>,<CustomerID>,<FlightNumber1>...<FlightNumberN>,<Location>,<Car-true/false>,<Room-true/false>"),
 
   Quit("Exit the client application", "");
 
