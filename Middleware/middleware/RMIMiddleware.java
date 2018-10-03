@@ -14,6 +14,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.Vector;
 
 import Client.Command;
+import Client.RMIClient;
 import Server.Interface.IResourceManager;
 import Server.RMI.RMIResourceManager;
 
@@ -44,11 +45,17 @@ public class RMIMiddleware extends Middleware {
 
     // Create the RMI server entry
     try {
-      // Create a new Server object
-      IResourceManager server = new RMIMiddleware(s_serverName, args);
-
+      RMIMiddleware middleware = new RMIMiddleware(s_serverName, args);
+      // Get a reference to the RMIRegister
+      try {
+        middleware.connectServers();
+      } catch (Exception e) {
+        System.err.println((char) 27 + "[31;1mMiddleware exception: " + (char) 27 + "[0mUncaught exception");
+        e.printStackTrace();
+      }
+      
       // Dynamically generate the stub (client proxy)
-      IResourceManager resourceManager = (IResourceManager) UnicastRemoteObject.exportObject(server, 0);
+      IResourceManager resourceManager = (IResourceManager) UnicastRemoteObject.exportObject(middleware, 0);
 
       // Bind the remote object's stub in the registry
       Registry l_registry;
@@ -58,7 +65,7 @@ public class RMIMiddleware extends Middleware {
         l_registry = LocateRegistry.getRegistry(1099);
       }
       final Registry registry = l_registry;
-      String name = s_rmiPrefix + s_serverName; System.out.println(name);
+      String name = s_rmiPrefix + s_serverName;
       registry.rebind(name, resourceManager);
 
       Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -67,7 +74,7 @@ public class RMIMiddleware extends Middleware {
             registry.unbind(s_rmiPrefix + s_serverName);
             System.out.println("'" + s_serverName + "' resource manager unbound");
           } catch (Exception e) {
-            System.err.println((char) 27 + "[31;1mServer exception: " + (char) 27 + "[0mUncaught exception");
+            System.err.println((char) 27 + "[31;1mMiddleware exception: " + (char) 27 + "[0mUncaught exception");
             e.printStackTrace();
           }
         }
@@ -75,7 +82,7 @@ public class RMIMiddleware extends Middleware {
       System.out.println(
           "'" + s_serverName + "' resource manager server ready and bound to '" + s_rmiPrefix + s_serverName + "'");
     } catch (Exception e) {
-      System.err.println((char) 27 + "[31;1mServer exception: " + (char) 27 + "[0mUncaught exception");
+      System.err.println((char) 27 + "[31;1mMiddleware exception: " + (char) 27 + "[0mUncaught exception");
       e.printStackTrace();
       System.exit(1);
     }
@@ -86,47 +93,7 @@ public class RMIMiddleware extends Middleware {
     }
   }
   
-  public void start() {
-    // Prepare for reading commands
-    System.out.println();
-    System.out.println("Location \"help\" for list of supported commands");
-
-    BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-
-    while (true) {
-      // Read the next command
-      String command = "";
-      Vector<String> arguments = new Vector<String>();
-      try {
-        System.out.print((char) 27 + "[32;1m\n>] " + (char) 27 + "[0m");
-        command = stdin.readLine().trim();
-      } catch (IOException io) {
-        System.err.println((char) 27 + "[31;1mMiddleware exception: " + (char) 27 + "[0m" + io.getLocalizedMessage());
-        io.printStackTrace();
-        System.exit(1);
-      }
-
-      try {
-        arguments = parse(command);
-        Command cmd = Command.fromString((String) arguments.elementAt(0));
-        try {
-          execute(cmd, arguments);
-        } catch (ConnectException e) {
-          connectServer();
-          execute(cmd, arguments);
-        }
-      } catch (IllegalArgumentException | ServerException e) {
-        System.err.println((char) 27 + "[31;1mCommand exception: " + (char) 27 + "[0m" + e.getLocalizedMessage());
-      } catch (ConnectException | UnmarshalException e) {
-        System.err.println((char) 27 + "[31;1mCommand exception: " + (char) 27 + "[0mConnection to server lost");
-      } catch (Exception e) {
-        System.err.println((char) 27 + "[31;1mCommand exception: " + (char) 27 + "[0mUncaught exception");
-        e.printStackTrace();
-      }
-    }
-  }
-  
-  public void connectServer() {
+  public void connectServers() {
     connectServer(s_serverHost, s_serverPort, serverNames);
   }
 
@@ -140,7 +107,7 @@ public class RMIMiddleware extends Middleware {
           Registry registry = LocateRegistry.getRegistry(server, port);
           flightManager = (IResourceManager) registry.lookup(s_rmiPrefix + names[0]);
           
-          System.out.println("Connected to '" + names[0] + "' servers [" + server + ":" 
+          System.out.println("Connected to '" + names[0] + "' server [" + server + ":" 
               + port + "/" + s_rmiPrefix + names[0] + "]");
           break;
         } catch (NotBoundException | RemoteException e) {
@@ -154,7 +121,7 @@ public class RMIMiddleware extends Middleware {
           Registry registry = LocateRegistry.getRegistry(server, port);
           carManager = (IResourceManager) registry.lookup(s_rmiPrefix + names[1]);
           
-          System.out.println("Connected to '" + names[1] + "' servers [" + server + ":" 
+          System.out.println("Connected to '" + names[1] + "' server [" + server + ":" 
               + port + "/" + s_rmiPrefix + names[1] + "]");
           break;
         } catch (NotBoundException | RemoteException e) {
@@ -168,7 +135,7 @@ public class RMIMiddleware extends Middleware {
           Registry registry = LocateRegistry.getRegistry(server, port);
           roomManager = (IResourceManager) registry.lookup(s_rmiPrefix + names[2]);
           
-          System.out.println("Connected to '" + names[2] + "' servers [" + server + ":" 
+          System.out.println("Connected to '" + names[2] + "' server [" + server + ":" 
               + port + "/" + s_rmiPrefix + names[2] + "]");
           break;
         } catch (NotBoundException | RemoteException e) {
