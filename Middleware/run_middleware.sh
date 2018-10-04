@@ -1,5 +1,3 @@
-./run_rmi.sh > /dev/null 2>&1
-
 if [[ "$#" -ne 7 ]]; then
   echo "Usage: bash run_middleware.sh <Port of middleware server> \
   <hostname of Flights> <Flights server port>   <hostname of Cars> <Cars server port> \

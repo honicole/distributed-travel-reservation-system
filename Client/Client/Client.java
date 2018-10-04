@@ -33,7 +33,6 @@ public abstract class Client {
       out.println("Hello world");
       out.flush();
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
     
