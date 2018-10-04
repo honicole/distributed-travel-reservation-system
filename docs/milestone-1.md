@@ -15,4 +15,12 @@ As each resource manager maintains a list of customers, we simply call the metho
 
 ## TCP implementation
 
+#### Architecture
+
+- Package command, args and id into `Serializable` object sent over TCP with `ObjectOutputStream`
+- 
+
+#### Concurrency
+- Event listeners
+
 ## Additional functionality
