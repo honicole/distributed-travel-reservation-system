@@ -1,5 +1,6 @@
 package middleware;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -22,8 +23,9 @@ public class TCPMiddleware extends Middleware {
   private static Executor executor = Executors.newFixedThreadPool(8);
   private static MiddlewareListener listener;
 
-  private TCPMiddleware() {}
-  
+  private TCPMiddleware() {
+  }
+
   public TCPMiddleware(String[] args) {
     super(new TCPResourceManager(args[2]), new TCPResourceManager(args[4]), new TCPResourceManager(args[6]));
     try {
@@ -48,9 +50,8 @@ public class TCPMiddleware extends Middleware {
     }
 
     TCPMiddleware mw = new TCPMiddleware();
-    
     setListener(mw.new MiddlewareListenerImpl());
-    
+
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
       while (true) {
         Socket clientSocket = serverSocket.accept();
@@ -71,29 +72,29 @@ public class TCPMiddleware extends Middleware {
     @Override
     public void onNewConnection(Socket socket) {
       Runnable r = () -> {
-        // package command
-
-        // write object to server socket
-
-        // get a response
-
-        // write to console
-
         try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
-
-          while (true) {
+          Object fromClient;
+          while ((fromClient = ois.readObject()) != null) {
             CompletableFuture future = CompletableFuture.supplyAsync(() -> {
               try {
-                oos.writeObject("Message recieved");
-                return (String) ois.readObject();
+                // unpackage object
+
+                // send to respective RM
+
+                // oos.writeObject(new Boolean(true));
+
+                // should be response from RM
+                return true;
               } catch (Exception e) {
                 e.printStackTrace();
               }
               return false;
             }, executor);
-            System.out.println(future.get());
+            oos.writeObject(future.get());
           }
+        } catch (EOFException e) {
+          System.out.println("Connection closed.");
         } catch (Exception e) {
           e.printStackTrace();
         }

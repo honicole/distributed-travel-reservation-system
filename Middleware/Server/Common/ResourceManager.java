@@ -17,6 +17,9 @@ public class ResourceManager implements IResourceManager {
   protected String m_name = "";
   protected RMHashMap m_data = new RMHashMap();
 
+  public ResourceManager() {
+  }
+
   public ResourceManager(String p_name) {
     m_name = p_name;
   }

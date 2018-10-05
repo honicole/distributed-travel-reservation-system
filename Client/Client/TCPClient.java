@@ -1,7 +1,6 @@
 package Client;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -28,7 +27,7 @@ public class TCPClient extends Client {
 
   private TCPClient() {
   }
-  
+
   public TCPClient(String host, int port) throws Exception {
     super();
     this.socket = new Socket(InetAddress.getByName(host), port);
@@ -54,46 +53,48 @@ public class TCPClient extends Client {
 
     TCPClient tcpClient = new TCPClient();
     tcpClient.runCommand();
-    
+
     // Set the security policy
     if (System.getSecurityManager() == null) {
       System.setSecurityManager(new SecurityManager());
     }
   }
 
-  
   public void runCommand() {
     // Prepare for reading commands
     System.out.println();
     System.out.println("Location \"help\" for list of supported commands");
-    
+
     try (Socket serverSocket = new Socket(s_serverHost, s_serverPort);
         ObjectOutputStream oos = new ObjectOutputStream(serverSocket.getOutputStream());
         ObjectInputStream ois = new ObjectInputStream(serverSocket.getInputStream());) {
-      
+
+      this.oos = oos;
+      this.ois = ois;
+
       BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
       TCPClient client = new TCPClient(serverSocket);
+
       while (true) {
         Vector<String> arguments = new Vector<String>();
         try {
           System.out.print((char) 27 + "[32;1m\n>] " + (char) 27 + "[0m");
-          final String command = stdIn.readLine().trim();
-          CompletableFuture future = CompletableFuture.supplyAsync(() -> {
-            try {
-              oos.writeObject(command);
-              return (String) ois.readObject();
-            } catch (Exception e) {
-              e.printStackTrace();
-            }
-            return false;
-          }, executor);
-          System.out.println(future.get());
-
-        } catch (IOException io) {
-          System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27 + "[0m" + io.getLocalizedMessage());
-          io.printStackTrace();
-          System.exit(1);
+          String command = stdIn.readLine().trim();
+          arguments = parse(command);
+          Command cmd = Command.fromString((String) arguments.elementAt(0));
+          try {
+            execute(cmd, arguments);
+          } catch (Exception e) {
+            System.err.println((char) 27 + "[31;1mCommand exception: " + (char) 27 + "[0mUncaught exception");
+            e.printStackTrace();
+          }
+        } catch (IllegalArgumentException e) {
+          System.err.println((char) 27 + "[31;1mCommand exception: " + (char) 27 + "[0m" + e.getLocalizedMessage());
+        } catch (Exception e) {
+          System.err.println((char) 27 + "[31;1mCommand exception: " + (char) 27 + "[0mUncaught exception");
+          e.printStackTrace();
         }
+
       }
     } catch (Exception e) {
       System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27 + "[0mUncaught exception");
@@ -101,8 +102,8 @@ public class TCPClient extends Client {
       System.exit(1);
     }
   }
-  
- public void execute(Command cmd, Vector<String> arguments) throws RemoteException, NumberFormatException {
+
+  public void execute(Command cmd, Vector<String> arguments) throws RemoteException, NumberFormatException {
     switch (cmd) {
     case Help: {
       if (arguments.size() == 1) {
@@ -129,10 +130,26 @@ public class TCPClient extends Client {
       int flightSeats = toInt(arguments.elementAt(3));
       int flightPrice = toInt(arguments.elementAt(4));
 
-      if (m_resourceManager.addFlight(id, flightNum, flightSeats, flightPrice)) {
-        System.out.println("Flight added");
-      } else {
-        System.out.println("Flight could not be added");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Flight added");
+        } else {
+          System.out.println("Flight could not be added");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -149,10 +166,26 @@ public class TCPClient extends Client {
       int numCars = toInt(arguments.elementAt(3));
       int price = toInt(arguments.elementAt(4));
 
-      if (m_resourceManager.addCars(id, location, numCars, price)) {
-        System.out.println("Cars added");
-      } else {
-        System.out.println("Cars could not be added");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Cars added");
+        } else {
+          System.out.println("Cars could not be added");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -169,10 +202,26 @@ public class TCPClient extends Client {
       int numRooms = toInt(arguments.elementAt(3));
       int price = toInt(arguments.elementAt(4));
 
-      if (m_resourceManager.addRooms(id, location, numRooms, price)) {
-        System.out.println("Rooms added");
-      } else {
-        System.out.println("Rooms could not be added");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Rooms added");
+        } else {
+          System.out.println("Rooms could not be added");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -196,10 +245,26 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       int customerID = toInt(arguments.elementAt(2));
 
-      if (m_resourceManager.newCustomer(id, customerID)) {
-        System.out.println("Add customer ID: " + customerID);
-      } else {
-        System.out.println("Customer could not be added");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Add customer ID: " + customerID);
+        } else {
+          System.out.println("Customer could not be added");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -212,10 +277,26 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       int flightNum = toInt(arguments.elementAt(2));
 
-      if (m_resourceManager.deleteFlight(id, flightNum)) {
-        System.out.println("Flight Deleted");
-      } else {
-        System.out.println("Flight could not be deleted");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Flight Deleted");
+        } else {
+          System.out.println("Flight could not be deleted");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -228,10 +309,26 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       String location = arguments.elementAt(2);
 
-      if (m_resourceManager.deleteCars(id, location)) {
-        System.out.println("Cars Deleted");
-      } else {
-        System.out.println("Cars could not be deleted");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Cars Deleted");
+        } else {
+          System.out.println("Cars could not be deleted");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -244,10 +341,26 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       String location = arguments.elementAt(2);
 
-      if (m_resourceManager.deleteRooms(id, location)) {
-        System.out.println("Rooms Deleted");
-      } else {
-        System.out.println("Rooms could not be deleted");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Rooms Deleted");
+        } else {
+          System.out.println("Rooms could not be deleted");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -260,10 +373,26 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       int customerID = toInt(arguments.elementAt(2));
 
-      if (m_resourceManager.deleteCustomer(id, customerID)) {
-        System.out.println("Customer Deleted");
-      } else {
-        System.out.println("Customer could not be deleted");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Customer Deleted");
+        } else {
+          System.out.println("Customer could not be deleted");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -369,10 +498,26 @@ public class TCPClient extends Client {
       int customerID = toInt(arguments.elementAt(2));
       int flightNum = toInt(arguments.elementAt(3));
 
-      if (m_resourceManager.reserveFlight(id, customerID, flightNum)) {
-        System.out.println("Flight Reserved");
-      } else {
-        System.out.println("Flight could not be reserved");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Flight Reserved");
+        } else {
+          System.out.println("Flight could not be reserved");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -387,10 +532,26 @@ public class TCPClient extends Client {
       int customerID = toInt(arguments.elementAt(2));
       String location = arguments.elementAt(3);
 
-      if (m_resourceManager.reserveCar(id, customerID, location)) {
-        System.out.println("Car Reserved");
-      } else {
-        System.out.println("Car could not be reserved");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Car Reserved");
+        } else {
+          System.out.println("Car could not be reserved");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -405,10 +566,26 @@ public class TCPClient extends Client {
       int customerID = toInt(arguments.elementAt(2));
       String location = arguments.elementAt(3);
 
-      if (m_resourceManager.reserveRoom(id, customerID, location)) {
-        System.out.println("Room Reserved");
-      } else {
-        System.out.println("Room could not be reserved");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Boolean) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Room Reserved");
+        } else {
+          System.out.println("Room could not be reserved");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
       break;
     }
@@ -450,26 +627,5 @@ public class TCPClient extends Client {
       System.exit(0);
     }
   }
-  
-//  public void setListener(UserCommandListener listener) {
-//    this.listener = listener;
-//  }
-//  
-//  class UserCommandListernerImpl implements UserCommandListener {
-//
-//    @Override
-//    public void userEnteredCommand() {
-//      Runnable r = () -> {
-//        // package command
-//        
-//        // write object to server socket 
-//        
-//        // get a response
-//        
-//        // write to console
-//      };
-//      executor.execute(r);
-//    }
-//  }
 
 }
