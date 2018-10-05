@@ -1,22 +1,29 @@
 package Client;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class TCPClient extends Client {
   private static String s_serverHost = "localhost";
   private static int s_serverPort = 1099;
 
+  private static Executor executor = Executors.newFixedThreadPool(8);
   private Socket socket;
 
   public TCPClient(String host, int port) throws Exception {
     super();
     this.socket = new Socket(InetAddress.getByName(host), port);
   }
-  
+
   public TCPClient(Socket socket) throws Exception {
     super();
     this.socket = socket;
@@ -40,25 +47,34 @@ public class TCPClient extends Client {
       System.setSecurityManager(new SecurityManager());
     }
 
-    
-    try (
-        Socket socket = new Socket(s_serverHost, s_serverPort);
-        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    ) {
+    try (Socket socket = new Socket(s_serverHost, s_serverPort);
+        ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+        ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());)
+    {
       BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-      String fromServer, fromUser;
-      
-      
-      System.out.println("Calling new TCPClient(host: " + s_serverHost + ", " + s_serverPort + ")");
       TCPClient client = new TCPClient(socket);
-      while((fromServer = in.readLine()) != null) {
-        System.out.println(fromServer);
-      }
-      
+      while (true) {
+        Vector<String> arguments = new Vector<String>();
+        try {
+          System.out.print((char) 27 + "[32;1m\n>] " + (char) 27 + "[0m");
+          final String command = stdIn.readLine().trim();
+          CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+            try {
+              oos.writeObject(command);
+              return (String) ois.readObject();
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+            return false;
+          }, executor);
+          System.out.println(future.get());
 
-//      System.out.println("33333");
-      // client.start();
+        } catch (IOException io) {
+          System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27 + "[0m" + io.getLocalizedMessage());
+          io.printStackTrace();
+          System.exit(1);
+        }
+      }
     } catch (Exception e) {
       System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27 + "[0mUncaught exception");
       e.printStackTrace();
