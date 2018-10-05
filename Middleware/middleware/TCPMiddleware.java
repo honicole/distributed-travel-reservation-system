@@ -132,6 +132,7 @@ public class TCPMiddleware extends Middleware {
                   this.r_oos.writeObject(req);
                   break;
                 case "AddCustomer":
+                case "AddCustomerID":
                 case "DeleteCustomerID":
                 case "QueryCustomer":
                   this.f_oos.writeObject(req);
