@@ -42,9 +42,15 @@ The general algorithm for the `TCPClient` has common elements with its RMI count
 To simplify our codebase and make it more efficient, we used the following relatively recent Java features:
 1. **Executors**: To manage a fixed size of concurrent threads automatically with minimal syntax.
 2. **Lambda functions**: We used these thoughout to express event handling code in a more expressive functional style. Concretely, this means we can specify an action (method) as a parameter to another method, so it can be run asynchronously. Other benefits of the Java lambda interface include better parallel performance and the ability to use `CompletableFuture`, detailed next.
-3. **CompletableFuture**: This is the most powerful feature used in this milestone, since it gives us a better API for programming reactively, without forcing us to write explicit synchronization code needed when using thread primitives. Put simply, a `CompletableFuture` is equivalent to a JavaScript `Promise`, a piece of code does something that could take time (such as contacting a remote server) and promises to return the result at a later time. In the meantime, the executing thread is free to do other things, such as handle other requests. Thanks to this asynchronous behavior, multiple requests can be serviced concurrently, thereby ensuring that the server is non-blocking.
+3. **CompletableFuture**: This is the most powerful feature used in this milestone, since it gives us a better API for programming reactively, without forcing us to write explicit synchronization code needed when using thread primitives. Put simply, a `CompletableFuture` is equivalent to a JavaScript `Promise`, a piece of code does something that could take time (such as contacting a remote server) and promises to return the result at a later time. In the meantime, the executing thread is free to do other things, such as handle other requests. Thanks to this asynchronous behavior, multiple requests can be serviced concurrently, thereby ensuring that the server is non-blocking. Another advantage of `CompletableFuture` is that they can be chained and composed together as illustrated by the following pseudocode:
 
-
+```java
+  var future = CompletableFuture.supplyAsync(firstAction)
+                                .thenApplyAsync(transformation1)
+                                .thenApplyAsync(transformation2)
+                                .thenCompose(anotherCompletableFuture)
+                                .completeExceptionally(exception); // handle errors
+```
 
 
 
