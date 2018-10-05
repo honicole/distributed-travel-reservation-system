@@ -23,6 +23,14 @@ public class TCPClient extends Client {
   private Socket socket;
   private UserCommandListener listener;
 
+  // These are set in the try
+  private static Socket serverSocket;
+  private ObjectOutputStream oos;
+  private ObjectInputStream ois;
+
+  private TCPClient() {
+  }
+  
   public TCPClient(String host, int port) throws Exception {
     super();
     this.socket = new Socket(InetAddress.getByName(host), port);
@@ -46,17 +54,28 @@ public class TCPClient extends Client {
       System.exit(1);
     }
 
+    TCPClient tcpClient = new TCPClient();
+    tcpClient.runCommand();
+    
     // Set the security policy
     if (System.getSecurityManager() == null) {
       System.setSecurityManager(new SecurityManager());
     }
 
-    try (Socket socket = new Socket(s_serverHost, s_serverPort);
-        ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-        ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());)
-    {
+  }
+
+  
+  public void runCommand() {
+    // Prepare for reading commands
+    System.out.println();
+    System.out.println("Location \"help\" for list of supported commands");
+    
+    try (Socket serverSocket = new Socket(s_serverHost, s_serverPort);
+        ObjectOutputStream oos = new ObjectOutputStream(serverSocket.getOutputStream());
+        ObjectInputStream ois = new ObjectInputStream(serverSocket.getInputStream());) {
+      
       BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-      TCPClient client = new TCPClient(socket);
+      TCPClient client = new TCPClient(serverSocket);
       while (true) {
         Vector<String> arguments = new Vector<String>();
         try {
@@ -86,85 +105,7 @@ public class TCPClient extends Client {
     }
   }
   
-  
-  public void start() {
-    // Prepare for reading commands
-    System.out.println();
-    System.out.println("Location \"help\" for list of supported commands");
-
-    BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-
-    PrintWriter out;
-    try {
-      out = new PrintWriter(socket.getOutputStream(), true);
-      System.out.println("hello");
-      out.println("Hello world");
-      out.flush();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    
-    while (true) {
-      // Read the next command
-      String command = "";
-      Vector<String> arguments = new Vector<String>();
-      try {
-        System.out.print((char) 27 + "[32;1m\n>] " + (char) 27 + "[0m");
-        command = stdin.readLine().trim();
-      } catch (IOException io) {
-        System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27 + "[0m" + io.getLocalizedMessage());
-        io.printStackTrace();
-        System.exit(1);
-      }
-
-      try {
-       
-        arguments = parse(command);
-        Command cmd = Command.fromString(arguments.elementAt(0));
-        
-        listener.userEnteredCommand();
-        
-        ObjectOutputStream oos = new ObjectOutputStream(null);
-        CompletableFuture commandResult = CompletableFuture.supplyAsync(() -> {
-          String fromServer = "";
-          try (
-              Socket socket = new Socket(s_serverHost, s_serverPort);
-              PrintWriter outInner = new PrintWriter(socket.getOutputStream(), true);
-              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-          ) {
-            BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-            
-            
-            ObjectOutputStream oosInner = new ObjectOutputStream(socket.getOutputStream());
-            //oos.writeObject(command);
-            
-            
-            System.out.println("Calling new TCPClient(host: " + s_serverHost + ", " + s_serverPort + ")");
-            TCPClient client = new TCPClient(socket);
-            
-            if ((fromServer = in.readLine()) != null) {
-              System.out.println(fromServer);
-            }
-          } catch (Exception e) {
-            System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27 + "[0mUncaught exception");
-            e.printStackTrace();
-            System.exit(1);
-          }
-          return fromServer;
-        }, executor);
-        
-        execute(cmd, arguments);
-        
-      } catch (IllegalArgumentException | ServerException e) {
-        System.err.println((char) 27 + "[31;1mCommand exception: " + (char) 27 + "[0m" + e.getLocalizedMessage());
-      } catch (Exception e) {
-        System.err.println((char) 27 + "[31;1mCommand exception: " + (char) 27 + "[0mUncaught exception");
-        e.printStackTrace();
-      }
-    }
-  }
-
-  public void execute(Command cmd, Vector<String> arguments) throws RemoteException, NumberFormatException {
+ public void execute(Command cmd, Vector<String> arguments) throws RemoteException, NumberFormatException {
     switch (cmd) {
     case Help: {
       if (arguments.size() == 1) {

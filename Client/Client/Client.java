@@ -19,7 +19,6 @@ public abstract class Client {
   private Socket socket;
 
   public Client() {
-    super();
   }
   
 
