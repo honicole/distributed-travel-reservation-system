@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import Client.Command;
 import Client.UserCommand;
 import Server.TCP.TCPResourceManager;
 
@@ -100,18 +101,44 @@ public class TCPMiddleware extends Middleware {
             e.printStackTrace();
           }
 
-          Object fromClient;
-          while ((fromClient = (Client.UserCommand) ois.readObject()) != null) {
+          final UserCommand[] fromClient = new UserCommand[1];
+          while ((fromClient[0] = (UserCommand) ois.readObject()) != null) {
             CompletableFuture future = CompletableFuture.supplyAsync(() -> {
               try {
+                final UserCommand req = fromClient[0];
+                final Command cmd = req.getCommand();
+                final String[] args = req.getArgs();
 
-                // unpackage object
-                // send to respective RM
-                this.f_oos.writeObject(new String("Hello"));
-                this.c_oos.writeObject(new String("World"));
-                this.r_oos.writeObject(new String("!!!!!"));
-
-                // should be response from RM
+                switch (cmd.name()) {
+                case "AddFlight":
+                case "DeleteFlight":
+                case "QueryFlight":
+                case "QueryFlightPrice":
+                case "ReserveFlight":
+                  this.f_oos.writeObject(req);
+                  break;
+                case "AddCars":
+                case "DeleteCars":
+                case "QueryCars":
+                case "QueryCarsPrice":
+                case "ReserveCar":
+                  this.c_oos.writeObject(req);
+                  break;
+                case "AddRooms":
+                case "DeleteRooms":
+                case "QueryRooms":
+                case "QueryRoomsPrice":
+                case "ReserveRoom":
+                  this.r_oos.writeObject(req);
+                  break;
+                case "AddCustomer":
+                case "DeleteCustomerID":
+                case "QueryCustomer":
+                  this.f_oos.writeObject(req);
+                  this.c_oos.writeObject(req);
+                  this.r_oos.writeObject(req);
+                  break;
+                }
                 return true;
               } catch (Exception e) {
                 e.printStackTrace();

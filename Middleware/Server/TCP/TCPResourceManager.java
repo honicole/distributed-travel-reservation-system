@@ -14,6 +14,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import Client.Command;
+import Client.UserCommand;
 import Server.Common.ResourceManager;
 
 public class TCPResourceManager extends ResourceManager {
@@ -68,25 +70,82 @@ public class TCPResourceManager extends ResourceManager {
         try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
           System.out.println("Connected");
-          Object fromClient;
-          while ((fromClient = (String) ois.readObject()) != null) {
+          final UserCommand[] fromClient = new UserCommand[1];
+          while ((fromClient[0] = (UserCommand) ois.readObject()) != null) {
             CompletableFuture future = CompletableFuture.supplyAsync(() -> {
               try {
-                // unpackage object
-
-                // send to respective RM
-
-                // oos.writeObject(new Boolean(true));
-
-                // should be response from RM
+                final UserCommand req = fromClient[0];
+                final Command cmd = req.getCommand();
+                final String[] args = req.getArgs();
+                System.out.println("Executing command");
+                switch (cmd.name()) {
+                case "AddFlight":
+                  oos.writeObject(new Boolean(addFlight(Integer.valueOf(args[1]), Integer.valueOf(args[2]),
+                      Integer.valueOf(args[3]), Integer.valueOf(args[4]))));
+                  break;
+                case "DeleteFlight":
+                  oos.writeObject(new Boolean(deleteFlight(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
+                  break;
+                case "QueryFlight":
+                  oos.writeObject(new Integer(queryFlight(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
+                  break;
+                case "QueryFlightPrice":
+                  oos.writeObject(new Integer(queryFlightPrice(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
+                  break;
+                case "ReserveFlight":
+                  oos.writeObject(new Boolean(reserveFlight(Integer.valueOf(args[1]), Integer.valueOf(args[2]),
+                      Integer.valueOf(args[3]))));
+                  break;
+                case "AddCars":
+                  oos.writeObject(new Boolean(addCars(Integer.valueOf(args[1]), args[2],
+                      Integer.valueOf(args[3]), Integer.valueOf(args[4]))));
+                  break;
+                case "DeleteCars":
+                  oos.writeObject(new Boolean(deleteCars(Integer.valueOf(args[1]), args[2])));
+                  break;
+                case "QueryCars":
+                  oos.writeObject(new Integer(queryCars(Integer.valueOf(args[1]), args[2])));
+                  break;
+                case "QueryCarsPrice":
+                  oos.writeObject(new Integer(queryCarsPrice(Integer.valueOf(args[1]), args[2])));
+                  break;
+                case "ReserveCar":
+                  oos.writeObject(new Boolean(reserveCar(Integer.valueOf(args[1]), Integer.valueOf(args[2]),
+                      args[3])));
+                  break;
+                case "AddRooms":
+                  oos.writeObject(new Boolean(addCars(Integer.valueOf(args[1]), args[2],
+                      Integer.valueOf(args[3]), Integer.valueOf(args[4]))));
+                  break;
+                case "DeleteRooms":
+                  oos.writeObject(new Boolean(deleteRooms(Integer.valueOf(args[1]), args[2])));
+                  break;
+                case "QueryRooms":
+                  oos.writeObject(new Integer(queryRooms(Integer.valueOf(args[1]), args[2])));
+                  break;
+                case "QueryRoomsPrice":
+                  oos.writeObject(new Integer(queryRoomsPrice(Integer.valueOf(args[1]), args[2])));
+                  break;
+                case "ReserveRoom":
+                  oos.writeObject(new Boolean(reserveRoom(Integer.valueOf(args[1]), Integer.valueOf(args[2]),
+                      args[3])));
+                  break;
+                case "AddCustomer":
+                  oos.writeObject(new Integer(newCustomer(Integer.valueOf(args[1]))));
+                  break;
+                case "DeleteCustomerID":
+                  oos.writeObject(new Boolean(newCustomer(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
+                  break;
+                case "QueryCustomer":
+                  oos.writeObject(new String(queryCustomerInfo(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
+                  break;
+                }
                 return true;
               } catch (Exception e) {
                 e.printStackTrace();
               }
               return false;
             }, executor);
-            // oos.writeObject(future.get());
-            System.out.println(future.get());
           }
         } catch (EOFException e) {
           System.out.println("Connection closed.");

@@ -230,9 +230,25 @@ public class TCPClient extends Client {
       System.out.println("Adding a new customer [xid=" + arguments.elementAt(1) + "]");
 
       int id = toInt(arguments.elementAt(1));
-      int customer = m_resourceManager.newCustomer(id);
 
-      System.out.println("Add customer ID: " + customer);
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Integer) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        int customer = (int) future.get();
+        System.out.println("Add customer ID: " + customer);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       break;
     }
     case AddCustomerID: {
@@ -404,8 +420,24 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       int flightNum = toInt(arguments.elementAt(2));
 
-      int seats = m_resourceManager.queryFlight(id, flightNum);
-      System.out.println("Number of seats available: " + seats);
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Integer) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        int seats = (int) future.get();
+        System.out.println("Number of seats available: " + seats);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       break;
     }
     case QueryCars: {
@@ -417,8 +449,24 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       String location = arguments.elementAt(2);
 
-      int numCars = m_resourceManager.queryCars(id, location);
-      System.out.println("Number of cars at this location: " + numCars);
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Integer) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        int numCars = (int) future.get();
+        System.out.println("Number of cars at this location: " + numCars);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       break;
     }
     case QueryRooms: {
@@ -430,8 +478,24 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       String location = arguments.elementAt(2);
 
-      int numRoom = m_resourceManager.queryRooms(id, location);
-      System.out.println("Number of rooms at this location: " + numRoom);
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Integer) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        int numRoom = (int) future.get();
+        System.out.println("Number of rooms at this location: " + numRoom);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       break;
     }
     case QueryCustomer: {
@@ -443,8 +507,24 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       int customerID = toInt(arguments.elementAt(2));
 
-      String bill = m_resourceManager.queryCustomerInfo(id, customerID);
-      System.out.print(bill);
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (String) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        String bill = (String) future.get();
+        System.out.print(bill);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       break;
     }
     case QueryFlightPrice: {
@@ -456,8 +536,24 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       int flightNum = toInt(arguments.elementAt(2));
 
-      int price = m_resourceManager.queryFlightPrice(id, flightNum);
-      System.out.println("Price of a seat: " + price);
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Integer) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        int price = (int) future.get();
+        System.out.println("Price of a seat: " + price);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       break;
     }
     case QueryCarsPrice: {
@@ -469,8 +565,24 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       String location = arguments.elementAt(2);
 
-      int price = m_resourceManager.queryCarsPrice(id, location);
-      System.out.println("Price of cars at this location: " + price);
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Integer) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        int price = (int) future.get();
+        System.out.println("Price of cars at this location: " + price);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       break;
     }
     case QueryRoomsPrice: {
@@ -482,8 +594,24 @@ public class TCPClient extends Client {
       int id = toInt(arguments.elementAt(1));
       String location = arguments.elementAt(2);
 
-      int price = m_resourceManager.queryRoomsPrice(id, location);
-      System.out.println("Price of rooms at this location: " + price);
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return (Integer) ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        int price = (int) future.get();
+        System.out.println("Price of rooms at this location: " + price);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       break;
     }
     case ReserveFlight: {
