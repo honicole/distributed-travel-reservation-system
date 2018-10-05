@@ -30,7 +30,7 @@ Our next task was to re-implement the system using the TCP protocol. Since remot
 
 #### Architecture
 
-In our implementation, all requests and responses are sent as serializable objects. Client requests are packaged into a `UserCommand` object containing an `id`, a `string` command and an `array` of arguments.
+In our implementation,  all requests and responses are sent as serializable objects. To send commands over TCP, we designed `UserCommand`, a simple class that implements `Serializable` and can therefore be packaged into an `ObjectOutputStream`. A `UserCommand` has an numeric `id`, the `Command` to run, and its arguments as a String array.
 
 On both the middleware and the resource managers, a server socket is continuously listening on the port for new connections. For every incoming request, a thread selected from a thread pool processes the data.
 
