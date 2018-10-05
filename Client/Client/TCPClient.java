@@ -5,11 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.rmi.RemoteException;
-import java.rmi.ServerException;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -61,7 +59,6 @@ public class TCPClient extends Client {
     if (System.getSecurityManager() == null) {
       System.setSecurityManager(new SecurityManager());
     }
-
   }
 
   
@@ -454,25 +451,25 @@ public class TCPClient extends Client {
     }
   }
   
-  public void setListener(UserCommandListener listener) {
-    this.listener = listener;
-  }
-  
-  class UserCommandListernerImpl implements UserCommandListener {
-
-    @Override
-    public void userEnteredCommand() {
-      Runnable r = () -> {
-        // package command
-        
-        // write object to server socket 
-        
-        // get a response
-        
-        // write to console
-      };
-      executor.execute(r);
-    }
-  }
+//  public void setListener(UserCommandListener listener) {
+//    this.listener = listener;
+//  }
+//  
+//  class UserCommandListernerImpl implements UserCommandListener {
+//
+//    @Override
+//    public void userEnteredCommand() {
+//      Runnable r = () -> {
+//        // package command
+//        
+//        // write object to server socket 
+//        
+//        // get a response
+//        
+//        // write to console
+//      };
+//      executor.execute(r);
+//    }
+//  }
 
 }

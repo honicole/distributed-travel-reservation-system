@@ -14,6 +14,8 @@ public class Middleware implements IResourceManager {
   IResourceManager roomManager;
 
   String name;
+  
+  public Middleware() {}
 
   public Middleware(IResourceManager... resourceManagers) {
     this.resourceManagers = resourceManagers;
