@@ -22,17 +22,19 @@ The bash script that is used to run the servers starts the RMI registry on each 
 Our first design decision was to have the middleware manage the customers since it does not directly deal with any of the other resources. However, the purpose of our middleware is act to as a layer of communication and distribute the requests. With this in mind, we chose to decentralize customer handling through replication at each resource manager. Each manager maintains its own list of customers. When the client invokes a `customer`-command, the middleware calls the method on all resource managers.
 
 #### Bundles
-As each resource manager maintains a list of customers, the middleware simply calls the methods on the respective managers.
+As each resource manager maintains a copy of the same list of customers, the middleware simply calls the methods on the respective `ResourceManager`s.
 
 ## TCP implementation
 #### Overview
-Our next task was to re-implement the system using the TCP protocol. Since remote method invocation was no longer possible, it was necessary to use generic message passing over TCP. This requires that the machines package their messages (requests and responses) into sendable objects, which would be unpackaged on the other side and acted upon. 
+Our next task was to re-implement the system using the TCP protocol. Since remote method invocation was no longer possible, it was necessary to use generic message passing over TCP. This requires that the machines package their messages (requests and responses) into sendable objects, which would be unpackaged on the other side and acted upon asynchronously. 
 
 #### Architecture
 
-In our implementation,  all requests and responses are sent as serializable objects. To send commands over TCP, we designed `UserCommand`, a simple class that implements `Serializable` and can therefore be packaged into an `ObjectOutputStream`. A `UserCommand` has an numeric `id`, the `Command` to run, and its arguments as a String array.
+In our implementation,  all requests and responses are sent as serializable objects. To send commands over TCP, we designed `UserCommand`, a simple custom class that implements `Serializable` and can therefore be packaged into an `ObjectOutputStream`. A `UserCommand` has an numeric `id`, the `Command` to run, and its arguments as a String array.
 
-On both the middleware and the resource managers, a server socket is continuously listening on the port for new connections. For every incoming request, a thread selected from a thread pool processes the data.
+On both the middleware and the resource managers, a server socket is continuously listening on the port for new connections. For every incoming request, a new thread is spawned in a fixed thread pool. This allows for reasonable concurrency while limiting the total number of threads to avoid server overload.
+
+The general algorithm for the `TCPClient` has common elements with its RMI counterpart. It takes a command string from the human user (eg, `addFlight,1,2,3,4`), performs basic validation, and parses it to determine the appropriate action to execute. In the case of TCP, this command is as  into the `UserCommand` object mentioned above and sent to the middleware via an . 
 
 
 ## Additional functionality
