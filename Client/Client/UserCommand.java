@@ -8,10 +8,11 @@ public class UserCommand implements Serializable {
   private static final long serialVersionUID = -2648982057052896146L;
   private Command command;
   private String[] args;
-  private int id = 0;
+  private long id = 0;
   
 
   public UserCommand(Command command, String[] args) {
+    id = System.currentTimeMillis() + (long)(1000*Math.random());
     this.command = command;
     this.args = args;
   }
@@ -33,7 +34,7 @@ public class UserCommand implements Serializable {
     this.args = args;
   }
   
-  public int getId() {
+  public long getId() {
     return id;
   }
   
