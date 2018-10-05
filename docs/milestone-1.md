@@ -34,10 +34,10 @@ In our implementation,  all requests and responses are sent as serializable obje
 
 On both the middleware and the resource managers, a server socket is continuously listening on the port for new connections. For every incoming request, a new thread is spawned in a fixed thread pool. This allows for reasonable concurrency while limiting the total number of threads to avoid server overload.
 
-The general algorithm for the `TCPClient` has common elements with its RMI counterpart. It takes a command string from the human user (eg, `addFlight,1,2,3,4`), performs basic validation, and parses it to determine the appropriate action to execute. In the case of TCP, this command is as  into the `UserCommand` object mentioned above and sent to the middleware via an . 
+The general algorithm for the `TCPClient` has common elements with its RMI counterpart. It takes a command string from the human user (eg, `addFlight,1,2,3,4`), performs basic validation, and parses it to determine the appropriate action to execute. In the case of TCP, this command is encapsulated into the `UserCommand` object mentioned above and sent to the middleware via an `ObjectOutputStream` bound to the appropriate socket. The Middleware then reads the `Command` attribute of the `UserCommand` received over its `ObjectInputStream` and determines the correct `ResourceManager`(s) to call asynchonously and forwards the `UserCommand`. When it receives a response, it sends it back to the client caller. The `ResourceManager`s behave in a similar manner. The format of the responses, from the `ResourceManager`s to `Middleware` and from `Middleware` to the `Client`s, is a primitive type wrapped in an object. This is possible since all methods of the `IResourceManager` interface return either `boolean`, `int`, or `String`. 
 
 
-## Additional functionality
+#### Additional functionality: Implementing Concurrency using new Java 8 features
 `Research how Java 8 lambda functions/serialization can be used to simplify TCP distribution
 and remote function invocation and explain in your report.`
 
