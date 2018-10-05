@@ -22,7 +22,7 @@ The bash script that is used to run the servers starts the RMI registry on each 
 Our first design decision was to have the middleware manage the customers since it does not directly deal with any of the other resources. However, the purpose of our middleware is act to as a layer of communication and distribute the requests. With this in mind, we chose to decentralize customer handling through replication at each resource manager. Each manager maintains its own list of customers. When the client invokes a `customer`-command, the middleware calls the method on all resource managers.
 
 #### Bundles
-As each resource manager maintains a copy of the same list of customers, the middleware simply calls the methods on the respective `ResourceManager`s.
+As each resource manager maintains a copy of the same list of customers, the middleware simply calls `reserveFlight()`, `reserveCar()`, and/or `reserveRoom()` on the corresponding `ResourceManager` based on the input paramemters.
 
 ## TCP implementation
 #### Overview
@@ -38,10 +38,14 @@ The general algorithm for the `TCPClient` has common elements with its RMI count
 
 
 #### Additional functionality: Implementing Concurrency using new Java 8 features
-`Research how Java 8 lambda functions/serialization can be used to simplify TCP distribution
-and remote function invocation and explain in your report.`
 
-`The CompletableFuture gives a better API for programming reactively, without forcing us to write explicit synchronization code. (we don't get this when using threads directly)
-The Future interface (which is implemented by CompletableFuture) gives other additional, obvious advantages.`
+To simplify our codebase and make it more efficient, we used the following relatively recent Java features:
+1. **Executors**: To manage a fixed size of concurrent threads automatically with minimal syntax.
+2. **Lambda functions**: We used these thoughout to express event handling code in a more expressive functional style. Concretely, this means we can specify an action (method) as a parameter to another method, so it can be run asynchronously. Other benefits of the Java lambda interface include better parallel performance and the ability to use `CompletableFuture`, detailed next.
+3. **CompletableFuture**: This is the most powerful feature used in this milestone, since it gives us a better API for programming reactively, without forcing us to write explicit synchronization code needed when using thread primitives. Put simply, a `CompletableFuture` is equivalent to a JavaScript `Promise`, a piece of code does something that could take time (such as contacting a remote server) and promises to return the result at a later time. In the meantime, the executing thread is free to do other things, such as handle other requests. Thanks to this asynchronous behavior, multiple requests can be serviced concurrently, thereby ensuring that the server is non-blocking.
 
-Java 8 lambda functions
+
+
+
+
+
