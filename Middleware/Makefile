@@ -41,7 +41,7 @@ compile-middleware-rmi: middleware/*.java Server/TCP/TCPResourceManager.java RMI
 	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin:./bin/middleware \
 	  Middleware/Server/Common/ResourceManager.java
 	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin:./bin/middleware \
-	  Middleware/Server/TCP/TCPResourceManager.java
+	  Middleware/Server/TCP/*.java
 	cd ..; javac -d ./bin/middleware -Xlint:deprecation -cp .:./bin/middleware:./bin/middleware:./bin \
 	  Middleware/middleware/*.java
 

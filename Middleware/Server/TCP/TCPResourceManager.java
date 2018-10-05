@@ -31,6 +31,9 @@ public class TCPResourceManager extends ResourceManager {
   }
 
   public static void main(String[] args) {
+    System.out.println("TCPResourceManager successfully called! :)");
+
+    
     if (args.length > 0) {
       s_serverPort = Integer.valueOf(args[0]);
     }
@@ -45,6 +48,7 @@ public class TCPResourceManager extends ResourceManager {
 
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
       while (true) {
+        System.out.println("Listening on port " + serverSocket.getInetAddress() + serverSocket.getLocalPort());
         Socket clientSocket = serverSocket.accept();
         listener.onNewConnection(clientSocket);
       }
@@ -65,6 +69,7 @@ public class TCPResourceManager extends ResourceManager {
       Runnable r = () -> {
         try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
+          System.out.println("Connected");
           Object fromClient;
           while ((fromClient = ois.readObject()) != null) {
             CompletableFuture future = CompletableFuture.supplyAsync(() -> {
@@ -82,7 +87,8 @@ public class TCPResourceManager extends ResourceManager {
               }
               return false;
             }, executor);
-            oos.writeObject(future.get());
+            //oos.writeObject(future.get());
+            System.out.println(future.get());
           }
         } catch (EOFException e) {
           System.out.println("Connection closed.");

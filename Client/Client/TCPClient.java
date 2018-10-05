@@ -18,7 +18,6 @@ public class TCPClient extends Client {
 
   private static Executor executor = Executors.newFixedThreadPool(8);
   private Socket socket;
-  private UserCommandListener listener;
 
   // These are set in the try
   private static Socket serverSocket;

@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -17,7 +18,7 @@ public class TCPMiddleware extends Middleware {
 
   private static String[] s_serverHosts = new String[] { "localhost", "localhost", "localhost" };
   private static int s_serverPort = 1099;
-  private String[] serverNames;
+  private static int[] s_serverPorts;
   private ServerSocket server;
 
   private static Executor executor = Executors.newFixedThreadPool(8);
@@ -26,7 +27,7 @@ public class TCPMiddleware extends Middleware {
   private TCPMiddleware() {
   }
 
-  public TCPMiddleware(String[] args) {
+  public TCPMiddleware(String[] args) throws Exception {
     super(new TCPResourceManager(args[2]), new TCPResourceManager(args[4]), new TCPResourceManager(args[6]));
     try {
       this.server = new ServerSocket(Integer.valueOf(args[0]), 1, InetAddress.getLocalHost());
@@ -34,7 +35,7 @@ public class TCPMiddleware extends Middleware {
       e.printStackTrace();
     }
     s_serverHosts = new String[] { args[1], args[3], args[5] };
-    serverNames = new String[] { args[2], args[4], args[6] };
+    s_serverPorts = new int[] { Integer.valueOf(args[2]), Integer.valueOf(args[4]), Integer.valueOf(args[6]) };
   }
 
   public static void main(String[] args) {
@@ -69,19 +70,37 @@ public class TCPMiddleware extends Middleware {
 
   class MiddlewareListenerImpl implements MiddlewareListener {
 
+    private Socket flightSocket;
+    private ObjectOutputStream f_oos;
+    private ObjectInputStream f_ois;
+
     @Override
-    public void onNewConnection(Socket socket) {
+    public void onNewConnection(Socket clientSocket) {
       Runnable r = () -> {
-        try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
+
+        try (ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+            ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
+            ) {
+          System.out.println("Connected to client.");
+          try {
+            Socket flightSocket = new Socket(s_serverHosts[0], s_serverPorts[0]);
+            ObjectOutputStream f_oos = new ObjectOutputStream(this.flightSocket.getOutputStream());
+            ObjectInputStream f_ois = new ObjectInputStream(this.flightSocket.getInputStream());
+            
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+          this.f_oos = f_oos;
+          this.f_ois = f_ois;
+          
           Object fromClient;
-          while ((fromClient = ois.readObject()) != null) {
+          while ((fromClient = (UserCommand) ois.readObject()) != null) {
             CompletableFuture future = CompletableFuture.supplyAsync(() -> {
               try {
+
                 // unpackage object
-
                 // send to respective RM
-
+                this.f_oos.writeObject(new String("Hello"));
                 // oos.writeObject(new Boolean(true));
 
                 // should be response from RM
