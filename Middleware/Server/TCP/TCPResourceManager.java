@@ -133,8 +133,11 @@ public class TCPResourceManager extends ResourceManager {
                 case "AddCustomer":
                   oos.writeObject(new Integer(newCustomer(Integer.valueOf(args[1]))));
                   break;
-                case "DeleteCustomerID":
+                case "AddCustomerID":
                   oos.writeObject(new Boolean(newCustomer(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
+                  break;
+                case "DeleteCustomerID":
+                  oos.writeObject(new Boolean(deleteCustomer(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
                   break;
                 case "QueryCustomer":
                   oos.writeObject(new String(queryCustomerInfo(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
