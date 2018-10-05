@@ -12,7 +12,6 @@ public abstract class Client {
 
   public Client() {
   }
-  
 
   public static Vector<String> parse(String command) {
     Vector<String> arguments = new Vector<String>();

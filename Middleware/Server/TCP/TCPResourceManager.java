@@ -20,8 +20,8 @@ public class TCPResourceManager extends ResourceManager {
   private static int s_serverPort = 1099;
   private ServerSocket server;
 
-  private static Executor executor = Executors.newFixedThreadPool(8);
-  private static ResourceManagerListener listener;
+  private Executor executor = Executors.newFixedThreadPool(8);
+  private ResourceManagerListener listener;
 
   private TCPResourceManager() {
   }
@@ -33,7 +33,6 @@ public class TCPResourceManager extends ResourceManager {
   public static void main(String[] args) {
     System.out.println("TCPResourceManager successfully called! :)");
 
-    
     if (args.length > 0) {
       s_serverPort = Integer.valueOf(args[0]);
     }
@@ -44,13 +43,12 @@ public class TCPResourceManager extends ResourceManager {
     }
 
     TCPResourceManager rm = new TCPResourceManager();
-    setListener(rm.new ResourceManagerListenerImpl());
+    rm.setListener(rm.new ResourceManagerListenerImpl());
 
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
       while (true) {
-        System.out.println("Listening on port " + serverSocket.getInetAddress() + serverSocket.getLocalPort());
         Socket clientSocket = serverSocket.accept();
-        listener.onNewConnection(clientSocket);
+        rm.listener.onNewConnection(clientSocket);
       }
     } catch (Exception e) {
       e.printStackTrace();
@@ -58,8 +56,8 @@ public class TCPResourceManager extends ResourceManager {
 
   }
 
-  public static void setListener(ResourceManagerListener listener) {
-    TCPResourceManager.listener = listener;
+  public void setListener(ResourceManagerListener listener) {
+    this.listener = listener;
   }
 
   class ResourceManagerListenerImpl implements ResourceManagerListener {
@@ -71,7 +69,7 @@ public class TCPResourceManager extends ResourceManager {
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
           System.out.println("Connected");
           Object fromClient;
-          while ((fromClient = ois.readObject()) != null) {
+          while ((fromClient = (String) ois.readObject()) != null) {
             CompletableFuture future = CompletableFuture.supplyAsync(() -> {
               try {
                 // unpackage object
@@ -87,7 +85,7 @@ public class TCPResourceManager extends ResourceManager {
               }
               return false;
             }, executor);
-            //oos.writeObject(future.get());
+            // oos.writeObject(future.get());
             System.out.println(future.get());
           }
         } catch (EOFException e) {

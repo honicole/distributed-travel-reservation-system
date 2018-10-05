@@ -17,7 +17,7 @@ public class Middleware implements IResourceManager {
 
   public Middleware() {
   }
-  
+
   public Middleware(IResourceManager... resourceManagers) {
     this.resourceManagers = resourceManagers;
 
