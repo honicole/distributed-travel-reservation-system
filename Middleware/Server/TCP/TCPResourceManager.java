@@ -1,8 +1,3 @@
-// -------------------------------
-// adapted from Kevin T. Manley
-// CSE 593
-// -------------------------------
-
 package Server.TCP;
 
 import java.io.EOFException;
@@ -14,8 +9,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import Client.Command;
-import Client.UserCommand;
+import Server.TCP.Command;
+import Server.TCP.UserCommand;
 import Server.Common.ResourceManager;
 
 public class TCPResourceManager extends ResourceManager {
