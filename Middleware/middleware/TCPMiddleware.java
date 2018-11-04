@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -104,11 +105,12 @@ public class TCPMiddleware extends Middleware {
           final UserCommand[] fromClient = new UserCommand[1];
           while ((fromClient[0] = (UserCommand) ois.readObject()) != null) {
             CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+              Object result = null;
               try {
                 final UserCommand req = fromClient[0];
                 final Command cmd = req.getCommand();
                 final String[] args = req.getArgs();
-
+                
                 switch (cmd.name()) {
                 case "AddFlight":
                 case "DeleteFlight":
@@ -116,6 +118,7 @@ public class TCPMiddleware extends Middleware {
                 case "QueryFlightPrice":
                 case "ReserveFlight":
                   this.f_oos.writeObject(req);
+                  result = this.f_ois.readObject();
                   break;
                 case "AddCars":
                 case "DeleteCars":
@@ -123,6 +126,7 @@ public class TCPMiddleware extends Middleware {
                 case "QueryCarsPrice":
                 case "ReserveCar":
                   this.c_oos.writeObject(req);
+                  result = this.c_ois.readObject();
                   break;
                 case "AddRooms":
                 case "DeleteRooms":
@@ -130,21 +134,44 @@ public class TCPMiddleware extends Middleware {
                 case "QueryRoomsPrice":
                 case "ReserveRoom":
                   this.r_oos.writeObject(req);
+                  result = this.r_ois.readObject();
                   break;
                 case "AddCustomer":
+                  this.f_oos.writeObject(req);
+                  int id = (int) f_ois.readObject();                 
+                  String[] args_with_id = Arrays.copyOf(args, args.length+1);
+                  args_with_id[args_with_id.length-1] = Integer.toString(id);
+                  UserCommand req_with_id = new UserCommand(Command.fromString("AddCustomerID"), args_with_id);            
+                  this.c_oos.writeObject(req_with_id);
+                  this.r_oos.writeObject(req_with_id);
+                  if ((Boolean) this.c_ois.readObject() && (Boolean) this.r_ois.readObject()) {
+                    result = id;
+                  } else {
+                    result = -1;
+                  }
+                  break;
                 case "AddCustomerID":
                 case "DeleteCustomerID":
+                  this.f_oos.writeObject(req);
+                  this.c_oos.writeObject(req);
+                  this.r_oos.writeObject(req);
+                  result = (Boolean) this.f_ois.readObject() && (Boolean) this.c_ois.readObject() && (Boolean) this.r_ois.readObject();
+                  break;
                 case "QueryCustomer":
                   this.f_oos.writeObject(req);
                   this.c_oos.writeObject(req);
                   this.r_oos.writeObject(req);
+                  String flights = (String) this.f_ois.readObject();
+                  String cars = (String) this.c_ois.readObject();
+                  String rooms = (String) this.r_ois.readObject();
+                  String regex = "^Bill for customer [0-9]*\n";
+                  result = String.join("", flights, cars.replaceFirst(regex, ""), rooms.replaceFirst(regex, ""));
                   break;
                 }
-                return true;
               } catch (Exception e) {
                 e.printStackTrace();
               }
-              return false;
+              return result;
             }, executor);
             oos.writeObject(future.get());
           }

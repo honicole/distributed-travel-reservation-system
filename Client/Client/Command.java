@@ -39,7 +39,6 @@ public enum Command {
     m_description = p_description;
     m_args = p_args;
   }
-
   public static Command fromString(String string) {
     for (Command cmd : Command.values()) {
       if (cmd.name().equalsIgnoreCase(string)) {

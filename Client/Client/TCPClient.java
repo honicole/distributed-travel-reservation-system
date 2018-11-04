@@ -134,7 +134,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -170,7 +170,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -206,7 +206,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -236,7 +236,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Integer) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -265,7 +265,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -297,7 +297,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -329,7 +329,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -361,7 +361,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -393,7 +393,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -425,7 +425,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Integer) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -454,11 +454,11 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Integer) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
-        return false;
+        return true;
       }, executor);
 
       try {
@@ -483,7 +483,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Integer) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -512,7 +512,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (String) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -541,7 +541,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Integer) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -570,7 +570,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Integer) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -599,7 +599,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Integer) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -630,7 +630,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -664,7 +664,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -698,7 +698,7 @@ public class TCPClient extends Client {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
-          return (Boolean) ois.readObject();
+          return ois.readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }

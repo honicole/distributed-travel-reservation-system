@@ -9,9 +9,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import Server.TCP.Command;
-import Server.TCP.UserCommand;
 import Server.Common.ResourceManager;
+import Client.Command;
+import Client.UserCommand;
 
 public class TCPResourceManager extends ResourceManager {
   private static int s_serverPort = 1099;
@@ -65,14 +65,15 @@ public class TCPResourceManager extends ResourceManager {
         try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
           System.out.println("Connected");
+          
           final UserCommand[] fromClient = new UserCommand[1];
           while ((fromClient[0] = (UserCommand) ois.readObject()) != null) {
-            CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+            CompletableFuture future = CompletableFuture.supplyAsync(() -> { 
               try {
                 final UserCommand req = fromClient[0];
                 final Command cmd = req.getCommand();
                 final String[] args = req.getArgs();
-                System.out.println("Executing command");
+                
                 switch (cmd.name()) {
                 case "AddFlight":
                   oos.writeObject(new Boolean(addFlight(Integer.valueOf(args[1]), Integer.valueOf(args[2]),
@@ -109,7 +110,7 @@ public class TCPResourceManager extends ResourceManager {
                       args[3])));
                   break;
                 case "AddRooms":
-                  oos.writeObject(new Boolean(addCars(Integer.valueOf(args[1]), args[2],
+                  oos.writeObject(new Boolean(addRooms(Integer.valueOf(args[1]), args[2],
                       Integer.valueOf(args[3]), Integer.valueOf(args[4]))));
                   break;
                 case "DeleteRooms":
