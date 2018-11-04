@@ -110,7 +110,7 @@ public class TCPMiddleware extends Middleware {
                 final UserCommand req = fromClient[0];
                 final Command cmd = req.getCommand();
                 final String[] args = req.getArgs();
-                
+
                 switch (cmd.name()) {
                 case "AddFlight":
                 case "DeleteFlight":
@@ -138,10 +138,10 @@ public class TCPMiddleware extends Middleware {
                   break;
                 case "AddCustomer":
                   this.f_oos.writeObject(req);
-                  int id = (int) f_ois.readObject();                 
-                  String[] args_with_id = Arrays.copyOf(args, args.length+1);
-                  args_with_id[args_with_id.length-1] = Integer.toString(id);
-                  UserCommand req_with_id = new UserCommand(Command.fromString("AddCustomerID"), args_with_id);            
+                  int id = (int) f_ois.readObject();
+                  String[] args_with_id = Arrays.copyOf(args, args.length + 1);
+                  args_with_id[args_with_id.length - 1] = Integer.toString(id);
+                  UserCommand req_with_id = new UserCommand(Command.fromString("AddCustomerID"), args_with_id);
                   this.c_oos.writeObject(req_with_id);
                   this.r_oos.writeObject(req_with_id);
                   if ((Boolean) this.c_ois.readObject() && (Boolean) this.r_ois.readObject()) {
@@ -155,17 +155,46 @@ public class TCPMiddleware extends Middleware {
                   this.f_oos.writeObject(req);
                   this.c_oos.writeObject(req);
                   this.r_oos.writeObject(req);
-                  result = (Boolean) this.f_ois.readObject() && (Boolean) this.c_ois.readObject() && (Boolean) this.r_ois.readObject();
+                  result = (Boolean) this.f_ois.readObject() && (Boolean) this.c_ois.readObject()
+                      && (Boolean) this.r_ois.readObject();
                   break;
                 case "QueryCustomer":
                   this.f_oos.writeObject(req);
                   this.c_oos.writeObject(req);
                   this.r_oos.writeObject(req);
-                  String flights = (String) this.f_ois.readObject();
-                  String cars = (String) this.c_ois.readObject();
-                  String rooms = (String) this.r_ois.readObject();
+                  String flights_bill = (String) this.f_ois.readObject();
+                  String cars_bill = (String) this.c_ois.readObject();
+                  String rooms_bill = (String) this.r_ois.readObject();
                   String regex = "^Bill for customer [0-9]*\n";
-                  result = String.join("", flights, cars.replaceFirst(regex, ""), rooms.replaceFirst(regex, ""));
+                  result = String.join("", flights_bill, cars_bill.replaceFirst(regex, ""),
+                      rooms_bill.replaceFirst(regex, ""));
+                  break;
+                case "Bundle":
+                  String xid = req.get(1);
+                  String cid = req.get(2);
+                  String location = req.get(args.length - 3);
+                  boolean reserved = true;
+                  for (int i = 3; i < args.length - 3; i++) {
+                    UserCommand flights_bundle = new UserCommand(Command.fromString("ReserveFlight"),
+                        new String[] { "ReserveFlight", xid, cid, req.get(i) });
+                    this.f_oos.writeObject(flights_bundle);
+                    reserved = reserved && (Boolean) this.f_ois.readObject();
+                  }
+                  if (Boolean.valueOf(req.get(args.length - 2))) {
+                    UserCommand cars_bundle = new UserCommand(Command.fromString("ReserveCar"),
+                        new String[] { "ReserveCar", xid, cid, location });
+                    this.c_oos.writeObject(cars_bundle);
+                    ;
+                    reserved = reserved && (Boolean) this.c_ois.readObject();
+                  }
+                  if (Boolean.valueOf(req.get(args.length - 1))) {
+                    UserCommand rooms_bundle = new UserCommand(Command.fromString("ReserveRoom"),
+                        new String[] { "ReserveRoom", xid, cid, location });
+                    this.r_oos.writeObject(rooms_bundle);
+                    ;
+                    reserved = reserved && (Boolean) this.r_ois.readObject();
+                  }
+                  result = reserved;
                   break;
                 }
               } catch (Exception e) {

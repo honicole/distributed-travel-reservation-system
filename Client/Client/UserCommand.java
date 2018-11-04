@@ -30,9 +30,14 @@ public class UserCommand implements Serializable {
   public void setArgs(String[] args) {
     this.args = args;
   }
+  
+  public String get(int index) {
+    return args[index];
+  }
 
   public long getId() {
     return id;
   }
+  
 
 }

@@ -89,8 +89,8 @@ public class TCPResourceManager extends ResourceManager {
                   oos.writeObject(new Integer(queryFlightPrice(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
                   break;
                 case "ReserveFlight":
-                  oos.writeObject(new Boolean(reserveFlight(Integer.valueOf(args[1]), Integer.valueOf(args[2]),
-                      Integer.valueOf(args[3]))));
+                  oos.writeObject(new Boolean(
+                      reserveFlight(Integer.valueOf(args[1]), Integer.valueOf(args[2]), Integer.valueOf(args[3]))));
                   break;
                 case "AddCars":
                   oos.writeObject(new Boolean(addCars(Integer.valueOf(args[1]), args[2],
