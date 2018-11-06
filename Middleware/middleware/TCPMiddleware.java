@@ -25,6 +25,7 @@ public class TCPMiddleware extends Middleware {
 
   private static Executor executor = Executors.newFixedThreadPool(8);
   private static MiddlewareListener listener;
+  private static TransactionManager TM;
 
   private TCPMiddleware() {
   }
@@ -38,6 +39,7 @@ public class TCPMiddleware extends Middleware {
     }
     s_serverHosts = new String[] { args[1], args[3], args[5] };
     s_serverPorts = new int[] { Integer.valueOf(args[2]), Integer.valueOf(args[4]), Integer.valueOf(args[6]) };
+    TM = new TransactionManager();
   }
 
   public static void main(String[] args) {
@@ -110,6 +112,10 @@ public class TCPMiddleware extends Middleware {
                 final UserCommand req = fromClient[0];
                 final Command cmd = req.getCommand();
                 final String[] args = req.getArgs();
+                int transactionId = -1;
+                if (args.length > 1) {
+                  transactionId = Integer.valueOf(args[1]);
+                }
 
                 switch (cmd.name()) {
                 case "AddFlight":
@@ -117,6 +123,7 @@ public class TCPMiddleware extends Middleware {
                 case "QueryFlight":
                 case "QueryFlightPrice":
                 case "ReserveFlight":
+                  TM.addResourceManager(transactionId, s_serverHosts[0]);
                   this.f_oos.writeObject(req);
                   result = this.f_ois.readObject();
                   break;
@@ -125,6 +132,7 @@ public class TCPMiddleware extends Middleware {
                 case "QueryCars":
                 case "QueryCarsPrice":
                 case "ReserveCar":
+                  TM.addResourceManager(transactionId, s_serverHosts[1]);
                   this.c_oos.writeObject(req);
                   result = this.c_ois.readObject();
                   break;
@@ -133,10 +141,14 @@ public class TCPMiddleware extends Middleware {
                 case "QueryRooms":
                 case "QueryRoomsPrice":
                 case "ReserveRoom":
+                  TM.addResourceManager(transactionId, s_serverHosts[2]);
                   this.r_oos.writeObject(req);
                   result = this.r_ois.readObject();
                   break;
                 case "AddCustomer":
+                  TM.addResourceManager(transactionId, s_serverHosts[0]);
+                  TM.addResourceManager(transactionId, s_serverHosts[1]);
+                  TM.addResourceManager(transactionId, s_serverHosts[2]);
                   this.f_oos.writeObject(req);
                   int id = (int) f_ois.readObject();
                   String[] args_with_id = Arrays.copyOf(args, args.length + 1);
@@ -152,6 +164,9 @@ public class TCPMiddleware extends Middleware {
                   break;
                 case "AddCustomerID":
                 case "DeleteCustomerID":
+                  TM.addResourceManager(transactionId, s_serverHosts[0]);
+                  TM.addResourceManager(transactionId, s_serverHosts[1]);
+                  TM.addResourceManager(transactionId, s_serverHosts[2]);
                   this.f_oos.writeObject(req);
                   this.c_oos.writeObject(req);
                   this.r_oos.writeObject(req);
@@ -159,6 +174,9 @@ public class TCPMiddleware extends Middleware {
                       && (Boolean) this.r_ois.readObject();
                   break;
                 case "QueryCustomer":
+                  TM.addResourceManager(transactionId, s_serverHosts[0]);
+                  TM.addResourceManager(transactionId, s_serverHosts[1]);
+                  TM.addResourceManager(transactionId, s_serverHosts[2]);
                   this.f_oos.writeObject(req);
                   this.c_oos.writeObject(req);
                   this.r_oos.writeObject(req);
@@ -170,6 +188,9 @@ public class TCPMiddleware extends Middleware {
                       rooms_bill.replaceFirst(regex, ""));
                   break;
                 case "Bundle":
+                  TM.addResourceManager(transactionId, s_serverHosts[0]);
+                  TM.addResourceManager(transactionId, s_serverHosts[1]);
+                  TM.addResourceManager(transactionId, s_serverHosts[2]);
                   String xid = req.get(1);
                   String cid = req.get(2);
                   String location = req.get(args.length - 3);
@@ -195,6 +216,13 @@ public class TCPMiddleware extends Middleware {
                     reserved = reserved && (Boolean) this.r_ois.readObject();
                   }
                   result = reserved;
+                  break;
+                case "start":
+                  result = (int) TM.start();
+                  break;
+                case "commit":
+                  break;
+                case "abort":
                   break;
                 }
               } catch (Exception e) {

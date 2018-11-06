@@ -55,7 +55,7 @@ public class ResourceManager implements IResourceManager {
     }
   }
 
-  // Deletes the encar item
+  // Deletes the item
   protected boolean deleteItem(int xid, String key) throws DeadlockException {
     Trace.info("RM::deleteItem(" + xid + ", " + key + ") called");
     lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);

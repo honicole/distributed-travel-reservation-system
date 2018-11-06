@@ -39,7 +39,12 @@ public class TCPResourceManager extends ResourceManager {
       System.setSecurityManager(new SecurityManager());
     }
 
-    TCPResourceManager rm = new TCPResourceManager();
+    TCPResourceManager rm;
+    if (args.length == 2) {
+      rm = new TCPResourceManager(args[0]);
+    } else {
+      rm = new TCPResourceManager();
+    }
     rm.setListener(rm.new ResourceManagerListenerImpl());
 
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
