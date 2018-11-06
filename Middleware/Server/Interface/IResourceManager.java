@@ -5,6 +5,8 @@ import java.rmi.RemoteException;
 
 import java.util.*;
 
+import Server.LockManager.DeadlockException;
+
 /**
  * Simplified version from CSE 593 Univ. of Washington
  *
@@ -27,7 +29,7 @@ public interface IResourceManager extends Remote {
    *
    * @return Success
    */
-  public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException;
+  public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException, DeadlockException;
 
   /**
    * Add car at a location.
@@ -36,7 +38,7 @@ public interface IResourceManager extends Remote {
    *
    * @return Success
    */
-  public boolean addCars(int id, String location, int numCars, int price) throws RemoteException;
+  public boolean addCars(int id, String location, int numCars, int price) throws RemoteException, DeadlockException;
 
   /**
    * Add room at a location.
@@ -45,21 +47,21 @@ public interface IResourceManager extends Remote {
    *
    * @return Success
    */
-  public boolean addRooms(int id, String location, int numRooms, int price) throws RemoteException;
+  public boolean addRooms(int id, String location, int numRooms, int price) throws RemoteException, DeadlockException;
 
   /**
    * Add customer.
    *
    * @return Unique customer identifier
    */
-  public int newCustomer(int id) throws RemoteException;
+  public int newCustomer(int id) throws RemoteException, DeadlockException;
 
   /**
    * Add customer with id.
    *
    * @return Success
    */
-  public boolean newCustomer(int id, int cid) throws RemoteException;
+  public boolean newCustomer(int id, int cid) throws RemoteException, DeadlockException;
 
   /**
    * Delete the flight.
@@ -69,7 +71,7 @@ public interface IResourceManager extends Remote {
    *
    * @return Success
    */
-  public boolean deleteFlight(int id, int flightNum) throws RemoteException;
+  public boolean deleteFlight(int id, int flightNum) throws RemoteException, DeadlockException;
 
   /**
    * Delete all cars at a location.
@@ -78,7 +80,7 @@ public interface IResourceManager extends Remote {
    *
    * @return Success
    */
-  public boolean deleteCars(int id, String location) throws RemoteException;
+  public boolean deleteCars(int id, String location) throws RemoteException, DeadlockException;
 
   /**
    * Delete all rooms at a location.
@@ -87,84 +89,84 @@ public interface IResourceManager extends Remote {
    *
    * @return Success
    */
-  public boolean deleteRooms(int id, String location) throws RemoteException;
+  public boolean deleteRooms(int id, String location) throws RemoteException, DeadlockException;
 
   /**
    * Delete a customer and associated reservations.
    *
    * @return Success
    */
-  public boolean deleteCustomer(int id, int customerID) throws RemoteException;
+  public boolean deleteCustomer(int id, int customerID) throws RemoteException, DeadlockException;
 
   /**
    * Query the status of a flight.
    *
    * @return Number of empty seats
    */
-  public int queryFlight(int id, int flightNumber) throws RemoteException;
+  public int queryFlight(int id, int flightNumber) throws RemoteException, DeadlockException;
 
   /**
    * Query the status of a car location.
    *
    * @return Number of available cars at this location
    */
-  public int queryCars(int id, String location) throws RemoteException;
+  public int queryCars(int id, String location) throws RemoteException, DeadlockException;
 
   /**
    * Query the status of a room location.
    *
    * @return Number of available rooms at this location
    */
-  public int queryRooms(int id, String location) throws RemoteException;
+  public int queryRooms(int id, String location) throws RemoteException, DeadlockException;
 
   /**
    * Query the customer reservations.
    *
    * @return A formatted bill for the customer
    */
-  public String queryCustomerInfo(int id, int customerID) throws RemoteException;
+  public String queryCustomerInfo(int id, int customerID) throws RemoteException, DeadlockException;
 
   /**
    * Query the status of a flight.
    *
    * @return Price of a seat in this flight
    */
-  public int queryFlightPrice(int id, int flightNumber) throws RemoteException;
+  public int queryFlightPrice(int id, int flightNumber) throws RemoteException, DeadlockException;
 
   /**
    * Query the status of a car location.
    *
    * @return Price of car
    */
-  public int queryCarsPrice(int id, String location) throws RemoteException;
+  public int queryCarsPrice(int id, String location) throws RemoteException, DeadlockException;
 
   /**
    * Query the status of a room location.
    *
    * @return Price of a room
    */
-  public int queryRoomsPrice(int id, String location) throws RemoteException;
+  public int queryRoomsPrice(int id, String location) throws RemoteException, DeadlockException;
 
   /**
    * Reserve a seat on this flight.
    *
    * @return Success
    */
-  public boolean reserveFlight(int id, int customerID, int flightNumber) throws RemoteException;
+  public boolean reserveFlight(int id, int customerID, int flightNumber) throws RemoteException, DeadlockException;
 
   /**
    * Reserve a car at this location.
    *
    * @return Success
    */
-  public boolean reserveCar(int id, int customerID, String location) throws RemoteException;
+  public boolean reserveCar(int id, int customerID, String location) throws RemoteException, DeadlockException;
 
   /**
    * Reserve a room at this location.
    *
    * @return Success
    */
-  public boolean reserveRoom(int id, int customerID, String location) throws RemoteException;
+  public boolean reserveRoom(int id, int customerID, String location) throws RemoteException, DeadlockException;
 
   /**
    * Reserve a bundle for the trip.
@@ -172,12 +174,12 @@ public interface IResourceManager extends Remote {
    * @return Success
    */
   public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location, boolean car,
-      boolean room) throws RemoteException;
+      boolean room) throws RemoteException, DeadlockException;
 
   /**
    * Convenience for probing the resource manager.
    *
    * @return Name
    */
-  public String getName() throws RemoteException;
+  public String getName() throws RemoteException, DeadlockException;
 }

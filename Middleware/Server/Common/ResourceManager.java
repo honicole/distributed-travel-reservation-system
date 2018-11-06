@@ -8,6 +8,9 @@ package Server.Common;
 import java.util.*;
 
 import Server.Interface.IResourceManager;
+import Server.LockManager.DeadlockException;
+import Server.LockManager.LockManager;
+import Server.LockManager.TransactionLockObject;
 import Server.Common.RMHashMap;
 
 import java.rmi.RemoteException;
@@ -16,12 +19,15 @@ import java.io.*;
 public class ResourceManager implements IResourceManager {
   protected String m_name = "";
   protected RMHashMap m_data = new RMHashMap();
+  protected LockManager lockManager;
 
   public ResourceManager() {
+    lockManager = new LockManager();
   }
 
   public ResourceManager(String p_name) {
     m_name = p_name;
+    lockManager = new LockManager();
   }
 
   // Reads a data item
@@ -50,8 +56,9 @@ public class ResourceManager implements IResourceManager {
   }
 
   // Deletes the encar item
-  protected boolean deleteItem(int xid, String key) {
+  protected boolean deleteItem(int xid, String key) throws DeadlockException {
     Trace.info("RM::deleteItem(" + xid + ", " + key + ") called");
+    lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
     ReservableItem curObj = (ReservableItem) readData(xid, key);
     // Check if there is such an item in the storage
     if (curObj == null) {
@@ -71,8 +78,9 @@ public class ResourceManager implements IResourceManager {
   }
 
   // Query the number of available seats/rooms/cars
-  protected int queryNum(int xid, String key) {
+  protected int queryNum(int xid, String key) throws DeadlockException {
     Trace.info("RM::queryNum(" + xid + ", " + key + ") called");
+    lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_READ);
     ReservableItem curObj = (ReservableItem) readData(xid, key);
     int value = 0;
     if (curObj != null) {
@@ -83,8 +91,9 @@ public class ResourceManager implements IResourceManager {
   }
 
   // Query the price of an item
-  protected int queryPrice(int xid, String key) {
+  protected int queryPrice(int xid, String key) throws DeadlockException {
     Trace.info("RM::queryPrice(" + xid + ", " + key + ") called");
+    lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_READ);
     ReservableItem curObj = (ReservableItem) readData(xid, key);
     int value = 0;
     if (curObj != null) {
@@ -95,9 +104,9 @@ public class ResourceManager implements IResourceManager {
   }
 
   // Reserve an item
-  protected boolean reserveItem(int xid, int customerID, String key, String location) {
+  protected boolean reserveItem(int xid, int customerID, String key, String location) throws DeadlockException {
     Trace.info("RM::reserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called");
-    // Read customer object if it exists (and read lock it)
+    lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_READ);
     Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location
@@ -131,8 +140,9 @@ public class ResourceManager implements IResourceManager {
 
   // Create a new flight, or add seats to existing flight
   // NOTE: if flightPrice <= 0 and the flight already exists, it maintains its current price
-  public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException {
+  public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException, DeadlockException {
     Trace.info("RM::addFlight(" + xid + ", " + flightNum + ", " + flightSeats + ", $" + flightPrice + ") called");
+    lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
     Flight curObj = (Flight) readData(xid, Flight.getKey(flightNum));
     if (curObj == null) {
       // Doesn't exist yet, add it
@@ -155,8 +165,9 @@ public class ResourceManager implements IResourceManager {
 
   // Create a new car location or add cars to an existing location
   // NOTE: if price <= 0 and the location already exists, it maintains its current price
-  public boolean addCars(int xid, String location, int count, int price) throws RemoteException {
+  public boolean addCars(int xid, String location, int count, int price) throws RemoteException, DeadlockException {
     Trace.info("RM::addCars(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
+    lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
     Car curObj = (Car) readData(xid, Car.getKey(location));
     if (curObj == null) {
       // Car location doesn't exist yet, add it
@@ -179,8 +190,9 @@ public class ResourceManager implements IResourceManager {
 
   // Create a new room location or add rooms to an existing location
   // NOTE: if price <= 0 and the room location already exists, it maintains its current price
-  public boolean addRooms(int xid, String location, int count, int price) throws RemoteException {
+  public boolean addRooms(int xid, String location, int count, int price) throws RemoteException, DeadlockException {
     Trace.info("RM::addRooms(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
+    lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
     Room curObj = (Room) readData(xid, Room.getKey(location));
     if (curObj == null) {
       // Room location doesn't exist yet, add it
@@ -202,52 +214,53 @@ public class ResourceManager implements IResourceManager {
   }
 
   // Deletes flight
-  public boolean deleteFlight(int xid, int flightNum) throws RemoteException {
+  public boolean deleteFlight(int xid, int flightNum) throws RemoteException, DeadlockException {
     return deleteItem(xid, Flight.getKey(flightNum));
   }
 
   // Delete cars at a location
-  public boolean deleteCars(int xid, String location) throws RemoteException {
+  public boolean deleteCars(int xid, String location) throws RemoteException, DeadlockException {
     return deleteItem(xid, Car.getKey(location));
   }
 
   // Delete rooms at a location
-  public boolean deleteRooms(int xid, String location) throws RemoteException {
+  public boolean deleteRooms(int xid, String location) throws RemoteException, DeadlockException {
     return deleteItem(xid, Room.getKey(location));
   }
 
   // Returns the number of empty seats in this flight
-  public int queryFlight(int xid, int flightNum) throws RemoteException {
+  public int queryFlight(int xid, int flightNum) throws RemoteException, DeadlockException {
     return queryNum(xid, Flight.getKey(flightNum));
   }
 
   // Returns the number of cars available at a location
-  public int queryCars(int xid, String location) throws RemoteException {
+  public int queryCars(int xid, String location) throws RemoteException, DeadlockException {
     return queryNum(xid, Car.getKey(location));
   }
 
   // Returns the amount of rooms available at a location
-  public int queryRooms(int xid, String location) throws RemoteException {
+  public int queryRooms(int xid, String location) throws RemoteException, DeadlockException {
     return queryNum(xid, Room.getKey(location));
   }
 
   // Returns price of a seat in this flight
-  public int queryFlightPrice(int xid, int flightNum) throws RemoteException {
+  public int queryFlightPrice(int xid, int flightNum) throws RemoteException, DeadlockException {
     return queryPrice(xid, Flight.getKey(flightNum));
   }
 
   // Returns price of cars at this location
-  public int queryCarsPrice(int xid, String location) throws RemoteException {
+  public int queryCarsPrice(int xid, String location) throws RemoteException, DeadlockException {
     return queryPrice(xid, Car.getKey(location));
   }
 
   // Returns room price at this location
-  public int queryRoomsPrice(int xid, String location) throws RemoteException {
+  public int queryRoomsPrice(int xid, String location) throws RemoteException, DeadlockException {
     return queryPrice(xid, Room.getKey(location));
   }
 
-  public String queryCustomerInfo(int xid, int customerID) throws RemoteException {
+  public String queryCustomerInfo(int xid, int customerID) throws RemoteException, DeadlockException {
     Trace.info("RM::queryCustomerInfo(" + xid + ", " + customerID + ") called");
+    lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_READ);
     Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       Trace.warn("RM::queryCustomerInfo(" + xid + ", " + customerID + ") failed--customer doesn't exist");
@@ -260,22 +273,24 @@ public class ResourceManager implements IResourceManager {
     }
   }
 
-  public int newCustomer(int xid) throws RemoteException {
+  public int newCustomer(int xid) throws RemoteException, DeadlockException {
     Trace.info("RM::newCustomer(" + xid + ") called");
     // Generate a globally unique ID for the new customer
     int cid = Integer.parseInt(String.valueOf(xid) + String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND))
         + String.valueOf(Math.round(Math.random() * 100 + 1)));
     Customer customer = new Customer(cid);
+    lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
     writeData(xid, customer.getKey(), customer);
     Trace.info("RM::newCustomer(" + cid + ") returns ID=" + cid);
     return cid;
   }
 
-  public boolean newCustomer(int xid, int customerID) throws RemoteException {
+  public boolean newCustomer(int xid, int customerID) throws RemoteException, DeadlockException {
     Trace.info("RM::newCustomer(" + xid + ", " + customerID + ") called");
     Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       customer = new Customer(customerID);
+      lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
       writeData(xid, customer.getKey(), customer);
       Trace.info("RM::newCustomer(" + xid + ", " + customerID + ") created a new customer");
       return true;
@@ -285,8 +300,9 @@ public class ResourceManager implements IResourceManager {
     }
   }
 
-  public boolean deleteCustomer(int xid, int customerID) throws RemoteException {
+  public boolean deleteCustomer(int xid, int customerID) throws RemoteException, DeadlockException {
     Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") called");
+    lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
     Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       Trace.warn("RM::deleteCustomer(" + xid + ", " + customerID + ") failed--customer doesn't exist");
@@ -315,17 +331,17 @@ public class ResourceManager implements IResourceManager {
   }
 
   // Adds flight reservation to this customer
-  public boolean reserveFlight(int xid, int customerID, int flightNum) throws RemoteException {
+  public boolean reserveFlight(int xid, int customerID, int flightNum) throws RemoteException, DeadlockException {
     return reserveItem(xid, customerID, Flight.getKey(flightNum), String.valueOf(flightNum));
   }
 
   // Adds car reservation to this customer
-  public boolean reserveCar(int xid, int customerID, String location) throws RemoteException {
+  public boolean reserveCar(int xid, int customerID, String location) throws RemoteException, DeadlockException {
     return reserveItem(xid, customerID, Car.getKey(location), location);
   }
 
   // Adds room reservation to this customer
-  public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException {
+  public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException, DeadlockException {
     return reserveItem(xid, customerID, Room.getKey(location), location);
   }
 

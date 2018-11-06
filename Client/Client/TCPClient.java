@@ -764,6 +764,87 @@ public class TCPClient extends Client {
       }
       break;
     }
+    case start: {
+      checkArgumentsCount(1, arguments.size());
+
+      System.out.println("Starting a transaction");
+
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        int xid = (int) future.get();
+        System.out.println("Transaction id: " + xid);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      break;
+    }
+
+    case commit: {
+      checkArgumentsCount(2, arguments.size());
+
+      System.out.println("Committing a transaction [xid=" + arguments.elementAt(1) + "]");
+
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Transaction was committed");
+        } else {
+          System.out.println("Transaction could not be committed");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      break;
+    }
+    case abort: {
+      checkArgumentsCount(2, arguments.size());
+
+      System.out.println("Aborting a transaction [xid=" + arguments.elementAt(1) + "]");
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        if ((boolean) future.get()) {
+          System.out.println("Transaction was aborted");
+        } else {
+          System.out.println("Transaction could not be aborted");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      break;
+    }
     case Quit:
       checkArgumentsCount(1, arguments.size());
 

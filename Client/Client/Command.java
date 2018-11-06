@@ -29,6 +29,10 @@ public enum Command {
 
   Bundle("Book N flight numbers, and optionally a room and/or car at a location",
       "<xid>,<CustomerID>,<FlightNumber1>...<FlightNumberN>,<Location>,<Car-true/false>,<Room-true/false>"),
+  
+  start("Start a transaction", null),
+  commit("Commit a transaction", "<xid>"),
+  abort("Abort a transaction", "<xid>"),
 
   Quit("Exit the client application", "");
 
