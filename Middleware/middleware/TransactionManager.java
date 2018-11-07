@@ -62,6 +62,7 @@ public class TransactionManager {
     setStatus(transactionId, Status.COMMITTING);
     Trace.info("TM::commit(" + transactionId + ") Transaction committing");
 
+    // should check first if everything can be committed?
     for (String rm : transaction.resourceManagersList) {
       this.middleware.commit(transactionId, rm);
     }
@@ -85,6 +86,7 @@ public class TransactionManager {
     setStatus(transactionId, Status.ABORTING);
     Trace.info("TM::abort(" + transactionId + ") Transaction aborting");
 
+    // should check first if everything can be aborted?
     for (String rm : transaction.resourceManagersList) {
       this.middleware.abort(transactionId, rm);
     }
@@ -95,6 +97,7 @@ public class TransactionManager {
   }
 
   public boolean shutdown() throws RemoteException {
+    // TODO
     return false;
   }
 
@@ -136,12 +139,12 @@ public class TransactionManager {
           if (transactions.containsKey(id) && transactions.get(id).status == Status.ACTIVE) {
             try {
               abort(id);
-              setStatus(id, Status.TIME_OUT);
-            } catch (RemoteException e) {
-              e.printStackTrace();
             } catch (InvalidTransactionException e) {
               e.printStackTrace();
+            } catch (RemoteException e) {
+              e.printStackTrace();
             }
+            setStatus(id, Status.TIME_OUT);
             Trace.info("TM::resetTimeToLive(" + id + ") Transaction timed out.");
           } else {
             time_to_live.remove(id);
@@ -150,6 +153,5 @@ public class TransactionManager {
       }, TIMEOUT);
       time_to_live.put(id, timer);
     }
-
   }
 }

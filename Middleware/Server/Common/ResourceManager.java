@@ -362,6 +362,7 @@ public class ResourceManager implements IResourceManager {
   public boolean commit(int transactionId)
       throws RemoteException, TransactionAbortedException, InvalidTransactionException {
     Trace.info("RM::commit(" + transactionId + ") called");
+    // TODO
     if (lockManager.UnlockAll(transactionId)) {
       Trace.info("RM::commit(" + transactionId + ") succeeded");
       return true;
@@ -373,6 +374,7 @@ public class ResourceManager implements IResourceManager {
   @Override
   public void abort(int transactionId) throws RemoteException, InvalidTransactionException {
     Trace.info("RM::abort(" + transactionId + ") called");
+    // TODO
     lockManager.UnlockAll(transactionId);
     Trace.info("RM::abort(" + transactionId + ") succeeded");
     return;
@@ -387,7 +389,6 @@ public class ResourceManager implements IResourceManager {
         System.exit(0);
       }
     }, 1000);
-
     return true;
   }
 }

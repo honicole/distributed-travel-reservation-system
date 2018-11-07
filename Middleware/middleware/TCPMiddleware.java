@@ -22,11 +22,10 @@ import exceptions.InvalidTransactionException;
 
 public class TCPMiddleware extends Middleware {
 
-  private static String[] s_serverHosts = new String[] { "localhost", "localhost", "localhost" };
-  private static int s_serverPort = 1099;
-  private static int[] s_serverPorts;
   private ServerSocket server;
-
+  private static int s_serverPort = 1099;
+  private static String[] s_serverHosts;
+  private static int[] s_serverPorts;
   private static Executor executor = Executors.newFixedThreadPool(8);
   private static MiddlewareListener listener;
   private static TransactionManager TM;
@@ -77,42 +76,31 @@ public class TCPMiddleware extends Middleware {
   public static void setListener(MiddlewareListener listener) {
     TCPMiddleware.listener = listener;
   }
-  
+
   public static MiddlewareListener getListener() {
     return TCPMiddleware.listener;
   }
 
   class MiddlewareListenerImpl implements MiddlewareListener {
 
-    private ObjectOutputStream f_oos;
-    private ObjectInputStream f_ois;
-    private ObjectOutputStream c_oos;
-    private ObjectInputStream c_ois;
-    private ObjectOutputStream r_oos;
-    private ObjectInputStream r_ois;
+    private Map<String, ObjectOutputStream> sockets_out = new HashMap<>();
+    private Map<String, ObjectInputStream> sockets_in = new HashMap<>();
 
     public boolean commit(int transactionId, String rm) {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         Object result = null;
-        UserCommand cmd = new UserCommand(Command.fromString("commit"), new String[] { "commit", Integer.toString(transactionId) });
+        String[] cmd_args = new String[] { "commit", Integer.toString(transactionId) };
+        UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
         try {
-          if (rm == s_serverHosts[0]) {
-            this.f_oos.writeObject(cmd);
-            result = this.f_ois.readObject();
-          } else if (rm == s_serverHosts[1]) {
-            this.c_oos.writeObject(cmd);
-            result = this.c_ois.readObject();
-          } else if (rm == s_serverHosts[2]) {
-            this.r_oos.writeObject(cmd);
-            result = this.r_ois.readObject();
-          }
+          sockets_out.get(rm).writeObject(req);
+          result = sockets_in.get(rm).readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
         return result;
       }, executor);
+
       try {
-        System.out.println((Boolean) future.get());
         return (Boolean) future.get();
       } catch (InterruptedException e) {
         e.printStackTrace();
@@ -121,18 +109,13 @@ public class TCPMiddleware extends Middleware {
       }
       return false;
     }
-    
+
     public void abort(int transactionId, String rm) {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
-        UserCommand cmd = new UserCommand(Command.fromString("abort"), new String[] { "abort", Integer.toString(transactionId) });
+        String[] cmd_args = new String[] { "abort", Integer.toString(transactionId) };
+        UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
         try {
-          if (rm == s_serverHosts[0]) {
-            this.f_oos.writeObject(cmd);
-          } else if (rm == s_serverHosts[1]) {
-            this.c_oos.writeObject(cmd);
-          } else if (rm == s_serverHosts[2]) {
-            this.r_oos.writeObject(cmd);
-          }
+          sockets_out.get(rm).writeObject(req);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -143,34 +126,29 @@ public class TCPMiddleware extends Middleware {
     @Override
     public void onNewConnection(Socket clientSocket) {
       Runnable r = () -> {
-
-        try (ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
-            ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());) {
+        try (ObjectOutputStream client_out = new ObjectOutputStream(clientSocket.getOutputStream());
+            ObjectInputStream client_in = new ObjectInputStream(clientSocket.getInputStream());) {
           System.out.println("Connected to client.");
           try {
-            Socket flightSocket = new Socket(InetAddress.getByName(s_serverHosts[0]), s_serverPorts[0]);
-            this.f_oos = new ObjectOutputStream(flightSocket.getOutputStream());
-            this.f_ois = new ObjectInputStream(flightSocket.getInputStream());
-            Socket carsSocket = new Socket(InetAddress.getByName(s_serverHosts[1]), s_serverPorts[1]);
-            this.c_oos = new ObjectOutputStream(carsSocket.getOutputStream());
-            this.c_ois = new ObjectInputStream(carsSocket.getInputStream());
-            Socket roomsSocket = new Socket(InetAddress.getByName(s_serverHosts[2]), s_serverPorts[2]);
-            this.r_oos = new ObjectOutputStream(roomsSocket.getOutputStream());
-            this.r_ois = new ObjectInputStream(roomsSocket.getInputStream());
-
+            for (int i = 0; i < s_serverHosts.length; i++) {
+              Socket socket = new Socket(InetAddress.getByName(s_serverHosts[i]), s_serverPorts[i]);
+              sockets_out.put(s_serverHosts[i], new ObjectOutputStream(socket.getOutputStream()));
+              sockets_in.put(s_serverHosts[i], new ObjectInputStream(socket.getInputStream()));
+            }
           } catch (Exception e) {
             e.printStackTrace();
           }
 
-          final UserCommand[] fromClient = new UserCommand[1];
-          while ((fromClient[0] = (UserCommand) ois.readObject()) != null) {
+          final UserCommand[] client_command = new UserCommand[1];
+          while ((client_command[0] = (UserCommand) client_in.readObject()) != null) {
             CompletableFuture future = CompletableFuture.supplyAsync(() -> {
               Object result = null;
+              int transactionId = -1;
               try {
-                final UserCommand req = fromClient[0];
+                final UserCommand req = client_command[0];
                 final Command cmd = req.getCommand();
                 final String[] args = req.getArgs();
-                int transactionId = -1;
+
                 if (args.length > 1) {
                   transactionId = Integer.valueOf(args[1]);
                   switch (TM.getStatus(transactionId)) {
@@ -190,103 +168,118 @@ public class TCPMiddleware extends Middleware {
                   }
                 }
 
+                String server;
+                boolean success = true;
                 switch (cmd.name()) {
                 case "AddFlight":
                 case "DeleteFlight":
                 case "QueryFlight":
                 case "QueryFlightPrice":
                 case "ReserveFlight":
-                  TM.addResourceManager(transactionId, s_serverHosts[0]);
-                  this.f_oos.writeObject(req);
-                  result = this.f_ois.readObject();
+                  server = s_serverHosts[0];
+                  TM.addResourceManager(transactionId, server);
+                  sockets_out.get(server).writeObject(req);
+                  result = sockets_in.get(server).readObject();
                   break;
                 case "AddCars":
                 case "DeleteCars":
                 case "QueryCars":
                 case "QueryCarsPrice":
                 case "ReserveCar":
-                  TM.addResourceManager(transactionId, s_serverHosts[1]);
-                  this.c_oos.writeObject(req);
-                  result = this.c_ois.readObject();
+                  server = s_serverHosts[1];
+                  TM.addResourceManager(transactionId, server);
+                  sockets_out.get(server).writeObject(req);
+                  result = sockets_in.get(server).readObject();
                   break;
                 case "AddRooms":
                 case "DeleteRooms":
                 case "QueryRooms":
                 case "QueryRoomsPrice":
                 case "ReserveRoom":
-                  TM.addResourceManager(transactionId, s_serverHosts[2]);
-                  this.r_oos.writeObject(req);
-                  result = this.r_ois.readObject();
+                  server = s_serverHosts[2];
+                  TM.addResourceManager(transactionId, server);
+                  sockets_out.get(server).writeObject(req);
+                  result = sockets_in.get(server).readObject();
                   break;
                 case "AddCustomer":
-                  TM.addResourceManager(transactionId, s_serverHosts[0]);
-                  TM.addResourceManager(transactionId, s_serverHosts[1]);
-                  TM.addResourceManager(transactionId, s_serverHosts[2]);
-                  this.f_oos.writeObject(req);
-                  int id = (int) f_ois.readObject();
-                  String[] args_with_id = Arrays.copyOf(args, args.length + 1);
-                  args_with_id[args_with_id.length - 1] = Integer.toString(id);
-                  UserCommand req_with_id = new UserCommand(Command.fromString("AddCustomerID"), args_with_id);
-                  this.c_oos.writeObject(req_with_id);
-                  this.r_oos.writeObject(req_with_id);
-                  if ((Boolean) this.c_ois.readObject() && (Boolean) this.r_ois.readObject()) {
-                    result = id;
-                  } else {
-                    result = -1;
+                  int id = -1;
+                  String[] args_with_id;
+                  UserCommand req_with_id = null;
+                  for (int i = 0; i < s_serverHosts.length; i++) {
+                    server = s_serverHosts[i];
+                    TM.addResourceManager(transactionId, server);
+                    if (i == 0) {
+                      // If first server, generate customer ID and repackage for subsequent servers
+                      sockets_out.get(server).writeObject(req);
+                      id = (int) sockets_in.get(server).readObject();
+                      args_with_id = Arrays.copyOf(args, args.length + 1);
+                      args_with_id[args_with_id.length - 1] = Integer.toString(id);
+                      req_with_id = new UserCommand(Command.fromString("AddCustomerID"), args_with_id);
+                    } else {
+                      sockets_out.get(server).writeObject(req_with_id);
+                      success &= (Boolean) sockets_in.get(server).readObject();
+                    }
                   }
+                  result = success ? id : -1;
                   break;
                 case "AddCustomerID":
                 case "DeleteCustomerID":
-                  TM.addResourceManager(transactionId, s_serverHosts[0]);
-                  TM.addResourceManager(transactionId, s_serverHosts[1]);
-                  TM.addResourceManager(transactionId, s_serverHosts[2]);
-                  this.f_oos.writeObject(req);
-                  this.c_oos.writeObject(req);
-                  this.r_oos.writeObject(req);
-                  result = (Boolean) this.f_ois.readObject() && (Boolean) this.c_ois.readObject()
-                      && (Boolean) this.r_ois.readObject();
+                  for (String s : s_serverHosts) {
+                    TM.addResourceManager(transactionId, s);
+                    sockets_out.get(s).writeObject(req);
+                    success &= (Boolean) sockets_in.get(s).readObject();
+                  }
+                  result = success;
                   break;
                 case "QueryCustomer":
-                  TM.addResourceManager(transactionId, s_serverHosts[0]);
-                  TM.addResourceManager(transactionId, s_serverHosts[1]);
-                  TM.addResourceManager(transactionId, s_serverHosts[2]);
-                  this.f_oos.writeObject(req);
-                  this.c_oos.writeObject(req);
-                  this.r_oos.writeObject(req);
-                  String flights_bill = (String) this.f_ois.readObject();
-                  String cars_bill = (String) this.c_ois.readObject();
-                  String rooms_bill = (String) this.r_ois.readObject();
+                  String customer_bill = "";
                   String regex = "^Bill for customer [0-9]*\n";
-                  result = String.join("", flights_bill, cars_bill.replaceFirst(regex, ""),
-                      rooms_bill.replaceFirst(regex, ""));
+                  for (int i = 0; i < s_serverHosts.length; i++) {
+                    server = s_serverHosts[i];
+                    TM.addResourceManager(transactionId, server);
+                    sockets_out.get(server).writeObject(req);
+                    String bill = (String) sockets_in.get(server).readObject();
+                    if (i == 0) {
+                      customer_bill = bill;
+                    } else {
+                      customer_bill += String.join("", bill.replaceFirst(regex, ""));
+                    }
+                  }
+                  result = customer_bill;
                   break;
                 case "Bundle":
-                  TM.addResourceManager(transactionId, s_serverHosts[0]);
-                  TM.addResourceManager(transactionId, s_serverHosts[1]);
-                  TM.addResourceManager(transactionId, s_serverHosts[2]);
+                  // TODO: check that all are available before reserving
                   String xid = req.get(1);
                   String cid = req.get(2);
                   String location = req.get(args.length - 3);
                   boolean reserved = true;
+                  String[] bundle_args;
+                  UserCommand command;
+                  server = s_serverHosts[0];
+                  TM.addResourceManager(transactionId, server);
                   for (int i = 3; i < args.length - 3; i++) {
-                    UserCommand flights_bundle = new UserCommand(Command.fromString("ReserveFlight"),
-                        new String[] { "ReserveFlight", xid, cid, req.get(i) });
-                    this.f_oos.writeObject(flights_bundle);
-                    reserved = reserved && (Boolean) this.f_ois.readObject();
+                    bundle_args = new String[] { "ReserveFlight", xid, cid, req.get(i) };
+                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
+                    sockets_out.get(server).writeObject(command);
+                    reserved &= (Boolean) sockets_in.get(server).readObject();
                   }
+
                   if (Boolean.valueOf(req.get(args.length - 2))) {
-                    UserCommand cars_bundle = new UserCommand(Command.fromString("ReserveCar"),
-                        new String[] { "ReserveCar", xid, cid, location });
-                    this.c_oos.writeObject(cars_bundle);
-                    ;
-                    reserved = reserved && (Boolean) this.c_ois.readObject();
+                    server = s_serverHosts[1];
+                    TM.addResourceManager(transactionId, server);
+                    bundle_args = new String[] { "ReserveCar", xid, cid, location };
+                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
+                    sockets_out.get(server).writeObject(command);
+                    reserved &= (Boolean) sockets_in.get(server).readObject();
                   }
+
                   if (Boolean.valueOf(req.get(args.length - 1))) {
-                    UserCommand rooms_bundle = new UserCommand(Command.fromString("ReserveRoom"),
-                        new String[] { "ReserveRoom", xid, cid, location });
-                    this.r_oos.writeObject(rooms_bundle);
-                    ;
-                    reserved = reserved && (Boolean) this.r_ois.readObject();
+                    server = s_serverHosts[2];
+                    TM.addResourceManager(transactionId, server);
+                    bundle_args = new String[] { "ReserveRoom", xid, cid, location };
+                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
+                    sockets_out.get(server).writeObject(command);
+                    reserved &= (Boolean) sockets_in.get(server).readObject();
                   }
                   result = reserved;
                   break;
@@ -305,7 +298,7 @@ public class TCPMiddleware extends Middleware {
               }
               return result;
             }, executor);
-            oos.writeObject(future.get());
+            client_out.writeObject(future.get());
           }
         } catch (EOFException e) {
           System.out.println("Connection closed.");

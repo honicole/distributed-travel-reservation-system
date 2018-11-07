@@ -39,12 +39,7 @@ public class TCPResourceManager extends ResourceManager {
       System.setSecurityManager(new SecurityManager());
     }
 
-    TCPResourceManager rm;
-    if (args.length == 2) {
-      rm = new TCPResourceManager(args[0]);
-    } else {
-      rm = new TCPResourceManager();
-    }
+    TCPResourceManager rm = new TCPResourceManager();
     rm.setListener(rm.new ResourceManagerListenerImpl());
 
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
@@ -70,15 +65,15 @@ public class TCPResourceManager extends ResourceManager {
         try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
           System.out.println("Connected");
-          
+
           final UserCommand[] fromClient = new UserCommand[1];
           while ((fromClient[0] = (UserCommand) ois.readObject()) != null) {
-            CompletableFuture future = CompletableFuture.supplyAsync(() -> { 
+            CompletableFuture future = CompletableFuture.supplyAsync(() -> {
               try {
                 final UserCommand req = fromClient[0];
                 final Command cmd = req.getCommand();
                 final String[] args = req.getArgs();
-                
+
                 switch (cmd.name()) {
                 case "AddFlight":
                   oos.writeObject(new Boolean(addFlight(Integer.valueOf(args[1]), Integer.valueOf(args[2]),
@@ -98,8 +93,8 @@ public class TCPResourceManager extends ResourceManager {
                       reserveFlight(Integer.valueOf(args[1]), Integer.valueOf(args[2]), Integer.valueOf(args[3]))));
                   break;
                 case "AddCars":
-                  oos.writeObject(new Boolean(addCars(Integer.valueOf(args[1]), args[2],
-                      Integer.valueOf(args[3]), Integer.valueOf(args[4]))));
+                  oos.writeObject(new Boolean(
+                      addCars(Integer.valueOf(args[1]), args[2], Integer.valueOf(args[3]), Integer.valueOf(args[4]))));
                   break;
                 case "DeleteCars":
                   oos.writeObject(new Boolean(deleteCars(Integer.valueOf(args[1]), args[2])));
@@ -111,12 +106,11 @@ public class TCPResourceManager extends ResourceManager {
                   oos.writeObject(new Integer(queryCarsPrice(Integer.valueOf(args[1]), args[2])));
                   break;
                 case "ReserveCar":
-                  oos.writeObject(new Boolean(reserveCar(Integer.valueOf(args[1]), Integer.valueOf(args[2]),
-                      args[3])));
+                  oos.writeObject(new Boolean(reserveCar(Integer.valueOf(args[1]), Integer.valueOf(args[2]), args[3])));
                   break;
                 case "AddRooms":
-                  oos.writeObject(new Boolean(addRooms(Integer.valueOf(args[1]), args[2],
-                      Integer.valueOf(args[3]), Integer.valueOf(args[4]))));
+                  oos.writeObject(new Boolean(
+                      addRooms(Integer.valueOf(args[1]), args[2], Integer.valueOf(args[3]), Integer.valueOf(args[4]))));
                   break;
                 case "DeleteRooms":
                   oos.writeObject(new Boolean(deleteRooms(Integer.valueOf(args[1]), args[2])));
@@ -128,8 +122,8 @@ public class TCPResourceManager extends ResourceManager {
                   oos.writeObject(new Integer(queryRoomsPrice(Integer.valueOf(args[1]), args[2])));
                   break;
                 case "ReserveRoom":
-                  oos.writeObject(new Boolean(reserveRoom(Integer.valueOf(args[1]), Integer.valueOf(args[2]),
-                      args[3])));
+                  oos.writeObject(
+                      new Boolean(reserveRoom(Integer.valueOf(args[1]), Integer.valueOf(args[2]), args[3])));
                   break;
                 case "AddCustomer":
                   oos.writeObject(new Integer(newCustomer(Integer.valueOf(args[1]))));
