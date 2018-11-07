@@ -8,7 +8,10 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -40,7 +43,7 @@ public class TCPMiddleware extends Middleware {
     }
     s_serverHosts = new String[] { args[1], args[3], args[5] };
     s_serverPorts = new int[] { Integer.valueOf(args[2]), Integer.valueOf(args[4]), Integer.valueOf(args[6]) };
-    TM = new TransactionManager();
+
   }
 
   public static void main(String[] args) {
@@ -57,6 +60,7 @@ public class TCPMiddleware extends Middleware {
 
     TCPMiddleware mw = new TCPMiddleware();
     setListener(mw.new MiddlewareListenerImpl());
+    TM = new TransactionManager(getListener());
 
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
       TCPMiddleware middleware = new TCPMiddleware(args);
@@ -73,6 +77,10 @@ public class TCPMiddleware extends Middleware {
   public static void setListener(MiddlewareListener listener) {
     TCPMiddleware.listener = listener;
   }
+  
+  public static MiddlewareListener getListener() {
+    return TCPMiddleware.listener;
+  }
 
   class MiddlewareListenerImpl implements MiddlewareListener {
 
@@ -82,6 +90,55 @@ public class TCPMiddleware extends Middleware {
     private ObjectInputStream c_ois;
     private ObjectOutputStream r_oos;
     private ObjectInputStream r_ois;
+
+    public boolean commit(int transactionId, String rm) {
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        Object result = null;
+        UserCommand cmd = new UserCommand(Command.fromString("commit"), new String[] { "commit", Integer.toString(transactionId) });
+        try {
+          if (rm == s_serverHosts[0]) {
+            this.f_oos.writeObject(cmd);
+            result = this.f_ois.readObject();
+          } else if (rm == s_serverHosts[1]) {
+            this.c_oos.writeObject(cmd);
+            result = this.c_ois.readObject();
+          } else if (rm == s_serverHosts[2]) {
+            this.r_oos.writeObject(cmd);
+            result = this.r_ois.readObject();
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return result;
+      }, executor);
+      try {
+        System.out.println((Boolean) future.get());
+        return (Boolean) future.get();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+      }
+      return false;
+    }
+    
+    public void abort(int transactionId, String rm) {
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        UserCommand cmd = new UserCommand(Command.fromString("abort"), new String[] { "abort", Integer.toString(transactionId) });
+        try {
+          if (rm == s_serverHosts[0]) {
+            this.f_oos.writeObject(cmd);
+          } else if (rm == s_serverHosts[1]) {
+            this.c_oos.writeObject(cmd);
+          } else if (rm == s_serverHosts[2]) {
+            this.r_oos.writeObject(cmd);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return true;
+      }, executor);
+    }
 
     @Override
     public void onNewConnection(Socket clientSocket) {
@@ -240,6 +297,7 @@ public class TCPMiddleware extends Middleware {
                   result = TM.commit(transactionId);
                   break;
                 case "abort":
+                  result = TM.abort(transactionId);
                   break;
                 }
               } catch (Exception e) {
@@ -257,6 +315,7 @@ public class TCPMiddleware extends Middleware {
       };
       executor.execute(r);
     }
+
   }
 
 }

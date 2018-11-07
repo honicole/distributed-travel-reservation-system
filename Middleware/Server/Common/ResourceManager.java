@@ -375,6 +375,7 @@ public class ResourceManager implements IResourceManager {
     Trace.info("RM::abort(" + transactionId + ") called");
     lockManager.UnlockAll(transactionId);
     Trace.info("RM::abort(" + transactionId + ") succeeded");
+    return;
   }
 
   @Override

@@ -5,19 +5,25 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
-import Server.Common.ResourceManager;
 import Server.Common.Trace;
 import exceptions.InvalidTransactionException;
 import exceptions.TransactionAbortedException;
 
 public class TransactionManager {
+  private static final long TIMEOUT = 30000;
   private int xid;
   private Map<Integer, Transaction> transactions;
+  private Map<Integer, Timer> time_to_live;
+  private MiddlewareListener middleware;
 
-  public TransactionManager() {
+  public TransactionManager(MiddlewareListener middleware) {
+    this.middleware = middleware;
     this.xid = 0;
     this.transactions = new HashMap<>();
+    this.time_to_live = new HashMap<>();
   }
 
   public enum Status {
@@ -57,6 +63,7 @@ public class TransactionManager {
     Trace.info("TM::commit(" + transactionId + ") Transaction committing");
 
     for (String rm : transaction.resourceManagersList) {
+      this.middleware.commit(transactionId, rm);
     }
 
     setStatus(transactionId, Status.COMMITTED);
@@ -64,28 +71,27 @@ public class TransactionManager {
     return true;
   }
 
-  public void abort(int transactionId) throws RemoteException, InvalidTransactionException {
+  public boolean abort(int transactionId) throws RemoteException, InvalidTransactionException {
     Transaction transaction = transactions.get(transactionId);
 
     if (transaction == null) {
       throw new InvalidTransactionException("The transaction does not exist");
     }
 
-    // if transaction not committed/committing/invalid
+    if (transaction.status != Status.ACTIVE) {
+      throw new InvalidTransactionException("Cannot abort the transaction.");
+    }
 
-    // set transaction status to ABORTING
     setStatus(transactionId, Status.ABORTING);
     Trace.info("TM::abort(" + transactionId + ") Transaction aborting");
 
     for (String rm : transaction.resourceManagersList) {
-      // send abort request
+      this.middleware.abort(transactionId, rm);
     }
 
-    // set transaction status to ABORTED
     setStatus(transactionId, Status.ABORTING);
-
     Trace.info("TM::abort(" + transactionId + ") Transaction aborted");
-    return;
+    return true;
   }
 
   public boolean shutdown() throws RemoteException {
@@ -110,11 +116,40 @@ public class TransactionManager {
   }
 
   public void addResourceManager(int id, String resourceManager) throws RemoteException {
-    transactions.get(id).resourceManagersList.add(resourceManager);
-    Trace.info("TM::addResourceManager(" + id + ", " + resourceManager + ") Resource manager added");
+    Transaction transaction = transactions.get(id);
+    if (!transaction.resourceManagersList.contains(resourceManager)) {
+      transaction.resourceManagersList.add(resourceManager);
+      Trace.info("TM::addResourceManager(" + id + ", " + resourceManager + ") Resource manager added");
+    }
   }
 
   public void resetTimeToLive(int id) {
-    Trace.info("TM::resetTimeToLive(" + id + ") Time-to-live reset to 0");
+    if (transactions.containsKey(id)) {
+      if (time_to_live.containsKey(id)) {
+        time_to_live.get(id).cancel();
+      }
+
+      Timer timer = new Timer();
+      timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+          if (transactions.containsKey(id) && transactions.get(id).status == Status.ACTIVE) {
+            try {
+              abort(id);
+              setStatus(id, Status.TIME_OUT);
+            } catch (RemoteException e) {
+              e.printStackTrace();
+            } catch (InvalidTransactionException e) {
+              e.printStackTrace();
+            }
+            Trace.info("TM::resetTimeToLive(" + id + ") Transaction timed out.");
+          } else {
+            time_to_live.remove(id);
+          }
+        }
+      }, TIMEOUT);
+      time_to_live.put(id, timer);
+    }
+
   }
 }

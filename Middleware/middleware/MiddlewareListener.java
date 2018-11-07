@@ -6,4 +6,8 @@ import java.net.UnknownHostException;
 
 public interface MiddlewareListener {
   void onNewConnection(Socket socket);
+
+  boolean commit(int transactionId, String rm);
+
+  void abort(int transactionId, String rm);
 }

@@ -143,6 +143,15 @@ public class TCPResourceManager extends ResourceManager {
                 case "QueryCustomer":
                   oos.writeObject(new String(queryCustomerInfo(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
                   break;
+                case "commit":
+                  oos.writeObject(new Boolean(commit(Integer.valueOf(args[1]))));
+                  break;
+                case "abort":
+                  abort(Integer.valueOf(args[1]));
+                  break;
+                case "shutdown":
+                  shutdown();
+                  break;
                 }
                 return true;
               } catch (Exception e) {
