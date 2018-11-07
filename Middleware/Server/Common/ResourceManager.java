@@ -11,6 +11,8 @@ import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
 import Server.LockManager.LockManager;
 import Server.LockManager.TransactionLockObject;
+import exceptions.InvalidTransactionException;
+import exceptions.TransactionAbortedException;
 import Server.Common.RMHashMap;
 
 import java.rmi.RemoteException;
@@ -140,7 +142,8 @@ public class ResourceManager implements IResourceManager {
 
   // Create a new flight, or add seats to existing flight
   // NOTE: if flightPrice <= 0 and the flight already exists, it maintains its current price
-  public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException, DeadlockException {
+  public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice)
+      throws RemoteException, DeadlockException {
     Trace.info("RM::addFlight(" + xid + ", " + flightNum + ", " + flightSeats + ", $" + flightPrice + ") called");
     lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
     Flight curObj = (Flight) readData(xid, Flight.getKey(flightNum));
@@ -353,5 +356,37 @@ public class ResourceManager implements IResourceManager {
 
   public String getName() throws RemoteException {
     return m_name;
+  }
+
+  @Override
+  public boolean commit(int transactionId)
+      throws RemoteException, TransactionAbortedException, InvalidTransactionException {
+    Trace.info("RM::commit(" + transactionId + ") called");
+    if (lockManager.UnlockAll(transactionId)) {
+      Trace.info("RM::commit(" + transactionId + ") succeeded");
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public void abort(int transactionId) throws RemoteException, InvalidTransactionException {
+    Trace.info("RM::abort(" + transactionId + ") called");
+    lockManager.UnlockAll(transactionId);
+    Trace.info("RM::abort(" + transactionId + ") succeeded");
+  }
+
+  @Override
+  public boolean shutdown() throws RemoteException {
+    Timer shutdown = new Timer();
+    shutdown.schedule(new TimerTask() {
+      @Override
+      public void run() {
+        System.exit(0);
+      }
+    }, 1000);
+
+    return true;
   }
 }

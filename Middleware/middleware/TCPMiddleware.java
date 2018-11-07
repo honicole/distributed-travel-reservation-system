@@ -15,6 +15,7 @@ import java.util.concurrent.Executors;
 import Client.Command;
 import Client.UserCommand;
 import Server.TCP.TCPResourceManager;
+import exceptions.InvalidTransactionException;
 
 public class TCPMiddleware extends Middleware {
 
@@ -115,6 +116,21 @@ public class TCPMiddleware extends Middleware {
                 int transactionId = -1;
                 if (args.length > 1) {
                   transactionId = Integer.valueOf(args[1]);
+                  switch (TM.getStatus(transactionId)) {
+                  case ACTIVE:
+                    TM.resetTimeToLive(transactionId);
+                    break;
+                  case COMMITTED:
+                    throw new InvalidTransactionException("The transaction was committed.");
+                  case ABORTED:
+                    throw new InvalidTransactionException("The transaction was aborted");
+                  case TIME_OUT:
+                    throw new InvalidTransactionException("The transaction timed out.");
+                  case INVALID:
+                    throw new InvalidTransactionException("The transaction does not exist");
+                  default:
+                    throw new InvalidTransactionException("Invalid transaction.");
+                  }
                 }
 
                 switch (cmd.name()) {
@@ -221,6 +237,7 @@ public class TCPMiddleware extends Middleware {
                   result = (int) TM.start();
                   break;
                 case "commit":
+                  result = TM.commit(transactionId);
                   break;
                 case "abort":
                   break;

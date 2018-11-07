@@ -147,6 +147,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Flight could not be added");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -183,6 +185,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Cars could not be added");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -219,6 +223,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Rooms could not be added");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -246,6 +252,8 @@ public class TCPClient extends Client {
       try {
         int customer = (int) future.get();
         System.out.println("Add customer ID: " + customer);
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -278,6 +286,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Customer could not be added");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -310,6 +320,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Flight could not be deleted");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -342,6 +354,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Cars could not be deleted");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -374,6 +388,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Rooms could not be deleted");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -406,6 +422,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Customer could not be deleted");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -435,6 +453,8 @@ public class TCPClient extends Client {
       try {
         int seats = (int) future.get();
         System.out.println("Number of seats available: " + seats);
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -464,6 +484,8 @@ public class TCPClient extends Client {
       try {
         int numCars = (int) future.get();
         System.out.println("Number of cars at this location: " + numCars);
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -493,6 +515,8 @@ public class TCPClient extends Client {
       try {
         int numRoom = (int) future.get();
         System.out.println("Number of rooms at this location: " + numRoom);
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -522,6 +546,8 @@ public class TCPClient extends Client {
       try {
         String bill = (String) future.get();
         System.out.print(bill);
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -551,6 +577,8 @@ public class TCPClient extends Client {
       try {
         int price = (int) future.get();
         System.out.println("Price of a seat: " + price);
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -580,6 +608,8 @@ public class TCPClient extends Client {
       try {
         int price = (int) future.get();
         System.out.println("Price of cars at this location: " + price);
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -609,6 +639,8 @@ public class TCPClient extends Client {
       try {
         int price = (int) future.get();
         System.out.println("Price of rooms at this location: " + price);
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -643,6 +675,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Flight could not be reserved");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -677,6 +711,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Car could not be reserved");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -711,6 +747,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Room could not be reserved");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -759,6 +797,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Bundle could not be reserved");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -813,6 +853,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Transaction could not be committed");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -840,6 +882,8 @@ public class TCPClient extends Client {
         } else {
           System.out.println("Transaction could not be aborted");
         }
+      } catch (NullPointerException e) {
+        System.out.println("Transaction ID does not exist");
       } catch (Exception e) {
         e.printStackTrace();
       }

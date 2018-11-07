@@ -5,6 +5,8 @@ import java.util.Vector;
 
 import Server.Interface.IResourceManager;
 import Server.LockManager.DeadlockException;
+import exceptions.InvalidTransactionException;
+import exceptions.TransactionAbortedException;
 
 public class Middleware implements IResourceManager {
 
@@ -149,6 +151,21 @@ public class Middleware implements IResourceManager {
   @Override
   public String getName() throws RemoteException, DeadlockException {
     return name;
+  }
+
+  @Override
+  public boolean commit(int transactionId)
+      throws RemoteException, TransactionAbortedException, InvalidTransactionException {
+    return false;
+  }
+
+  @Override
+  public void abort(int transactionId) throws RemoteException, InvalidTransactionException {
+  }
+
+  @Override
+  public boolean shutdown() throws RemoteException {
+    return false;
   }
 
 }

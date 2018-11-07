@@ -6,6 +6,8 @@ import java.rmi.RemoteException;
 import java.util.*;
 
 import Server.LockManager.DeadlockException;
+import exceptions.InvalidTransactionException;
+import exceptions.TransactionAbortedException;
 
 /**
  * Simplified version from CSE 593 Univ. of Washington
@@ -182,4 +184,10 @@ public interface IResourceManager extends Remote {
    * @return Name
    */
   public String getName() throws RemoteException, DeadlockException;
+  
+  public boolean commit(int transactionId) throws RemoteException, TransactionAbortedException, InvalidTransactionException;
+
+  public void abort(int transactionId) throws RemoteException, InvalidTransactionException;
+
+  public boolean shutdown() throws RemoteException;
 }

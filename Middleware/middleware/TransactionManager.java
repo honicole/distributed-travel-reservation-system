@@ -46,32 +46,29 @@ public class TransactionManager {
     Transaction transaction = transactions.get(transactionId);
 
     if (transaction == null) {
-      throw new InvalidTransactionException();
+      throw new InvalidTransactionException("The transaction does not exist");
     }
 
-    // if transaction not active
+    if (transaction.status != Status.ACTIVE) {
+      throw new InvalidTransactionException("Cannot commit the transaction.");
+    }
 
-    // set transaction status to COMMITTING
     setStatus(transactionId, Status.COMMITTING);
     Trace.info("TM::commit(" + transactionId + ") Transaction committing");
 
     for (String rm : transaction.resourceManagersList) {
-      // send commit request
     }
 
-    // set transaction status to COMMITTED
     setStatus(transactionId, Status.COMMITTED);
     Trace.info("TM::commit(" + transactionId + ") Transaction committed");
-    // return true
-
-    return false;
+    return true;
   }
 
   public void abort(int transactionId) throws RemoteException, InvalidTransactionException {
     Transaction transaction = transactions.get(transactionId);
 
     if (transaction == null) {
-      throw new InvalidTransactionException();
+      throw new InvalidTransactionException("The transaction does not exist");
     }
 
     // if transaction not committed/committing/invalid
@@ -96,16 +93,28 @@ public class TransactionManager {
   }
 
   public void setStatus(int id, Status status) {
-    transactions.get(id).status = status;
-    Trace.info("TM::setStatus(" + id + ", " + status + ") Status set");
+    if (transactions.containsKey(id)) {
+      transactions.get(id).status = status;
+      Trace.info("TM::setStatus(" + id + ", " + status + ") Status set");
+    } else {
+      Trace.info("TM::setStatus(" + id + ", " + status + ") Status not set -- transaction id does not exist");
+    }
   }
 
   public Status getStatus(int id) {
-    return transactions.get(id).status;
+    if (transactions.containsKey(id)) {
+      return transactions.get(id).status;
+    } else {
+      return Status.INVALID;
+    }
   }
 
   public void addResourceManager(int id, String resourceManager) throws RemoteException {
     transactions.get(id).resourceManagersList.add(resourceManager);
     Trace.info("TM::addResourceManager(" + id + ", " + resourceManager + ") Resource manager added");
+  }
+
+  public void resetTimeToLive(int id) {
+    Trace.info("TM::resetTimeToLive(" + id + ") Time-to-live reset to 0");
   }
 }
