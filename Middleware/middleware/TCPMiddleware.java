@@ -39,7 +39,7 @@ public class TCPMiddleware extends Middleware {
     try {
       this.server = new ServerSocket(Integer.valueOf(args[0]), 1, InetAddress.getLocalHost());
     } catch (NumberFormatException | IOException e) {
-      e.printStackTrace();
+      //e.printStackTrace();
     }
     s_serverHosts = new String[] { args[1], args[3], args[5] };
     s_serverPorts = new int[] { Integer.valueOf(args[2]), Integer.valueOf(args[4]), Integer.valueOf(args[6]) };
