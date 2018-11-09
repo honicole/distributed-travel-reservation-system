@@ -230,6 +230,7 @@ public class TCPMiddleware extends Middleware {
                 case "AddCustomerID":
                 case "DeleteCustomerID":
                   for (String s : s_serverHosts) {
+                    // TODO: IDENTIFY WITH HOST AND PORT!!!!!!!!!
                     TM.addResourceManager(transactionId, s);
                     sockets_out.get(clientSocket).get(s).writeObject(req);
                     success &= (Boolean) sockets_in.get(clientSocket).get(s).readObject();
