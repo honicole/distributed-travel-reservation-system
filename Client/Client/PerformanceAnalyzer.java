@@ -24,8 +24,17 @@ public class PerformanceAnalyzer extends TCPClient {
   private ObjectOutputStream oos;
   private ObjectInputStream ois;
   
+  
+  // could have multiple lists, like itinery, etc
   private UserCommand[] commands = {
     new UserCommand(AddFlight, new String[] {"1", "1", "1", "100"}),
+    
+    // need to do a logical sequence of commands 
+    // start 
+    // addFlight/Cars/..
+    // Query
+    // Get cx
+    // Delete
   };
 
   public PerformanceAnalyzer(Socket socket) throws Exception {
@@ -34,6 +43,17 @@ public class PerformanceAnalyzer extends TCPClient {
   }
 
   public static void main(String[] args) {
+    if (args.length > 0) {
+      s_serverHost = args[0];
+    }
+    if (args.length > 1) {
+      s_serverPort = Integer.valueOf(args[1]);
+    }
+    if (args.length > 2) {
+      System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27
+          + "[0mUsage: java client.PerformanceAnalyzer [server_hostname [server_port]]");
+      System.exit(1);
+    }
 
     PerformanceAnalyzer performanceAnalyzer = null;
     try {
@@ -64,7 +84,15 @@ public class PerformanceAnalyzer extends TCPClient {
       this.ois = ois;
 
       for (UserCommand uc: commands) {
+        long start = System.currentTimeMillis();
         execute(uc.getCommand(), new Vector<String>(Arrays.asList(uc.getArgs())));
+        
+        long now = System.currentTimeMillis();
+        if(now - start < 500) {
+          // wait
+          while(System.currentTimeMillis() - start < 500)
+            ;
+        }
       }
       
     } catch (Exception e) {
