@@ -27,7 +27,7 @@ public class PerformanceAnalyzer extends TCPClient {
   
   // could have multiple lists, like itinery, etc
   private UserCommand[] commands = {
-    new UserCommand(AddFlight, new String[] {"1", "1", "1", "100"}),
+    new UserCommand(AddFlight, new String[] {"", "1", "1", "1", "100"}),
     
     // need to do a logical sequence of commands 
     // start 
