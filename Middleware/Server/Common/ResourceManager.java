@@ -200,6 +200,12 @@ public class ResourceManager implements IResourceManager {
     if (curObj == null) {
       // Car location doesn't exist yet, add it
       Car newObj = new Car(location, count, price);
+      
+      // if flight not in pre_image
+      if (!pre_image.get(xid).containsKey(Car.getKey(location))) {
+        pre_image.get(xid).put(Car.getKey(location), null);
+      }
+      
       addToWriteList(xid, newObj.getKey());
       Trace.info("RM::ADD TO WRITE LIST XID = " + xid + " KEY = " + newObj.getKey());
       writeData(xid, newObj.getKey(), newObj);
@@ -207,7 +213,12 @@ public class ResourceManager implements IResourceManager {
           .info("RM::addCars(" + xid + ") created new location " + location + ", count=" + count + ", price=$" + price);
     } else {
       addToWriteList(xid, curObj.getKey());
-      addToPreImage(xid, curObj.getKey(), curObj);
+      
+      // if car not in pre_image
+      if (!pre_image.get(xid).containsKey(Car.getKey(location))) {
+        addToPreImage(xid, curObj.getKey(), curObj);
+      }
+      
       Trace.info("RM::ADD TO PRE IMAGE XID = " + xid + " KEY = " + curObj.getKey() + " OBJ = " + curObj);
       // Add count to existing car location and update price if greater than zero
       curObj.setCount(curObj.getCount() + count);
@@ -231,13 +242,24 @@ public class ResourceManager implements IResourceManager {
     if (curObj == null) {
       // Room location doesn't exist yet, add it
       Room newObj = new Room(location, count, price);
+      
+      // if room not in pre_image
+      if (!pre_image.get(xid).containsKey(Room.getKey(location))) {
+        pre_image.get(xid).put(Room.getKey(location), null);
+      }
+      
       addToWriteList(xid, newObj.getKey());
       writeData(xid, newObj.getKey(), newObj);
       Trace.info(
           "RM::addRooms(" + xid + ") created new room location " + location + ", count=" + count + ", price=$" + price);
     } else {
       addToWriteList(xid, curObj.getKey());
-      addToPreImage(xid, curObj.getKey(), curObj);
+      
+      // if room not in pre_image
+      if (!pre_image.get(xid).containsKey(Room.getKey(location))) {
+        addToPreImage(xid, curObj.getKey(), curObj);
+      }
+      
       // Add count to existing object and update price if greater than zero
       curObj.setCount(curObj.getCount() + count);
       if (price > 0) {
