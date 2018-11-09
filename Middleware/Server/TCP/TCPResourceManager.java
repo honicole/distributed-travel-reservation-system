@@ -156,6 +156,7 @@ public class TCPResourceManager extends ResourceManager {
                 } catch (IOException e1) {
                   e1.printStackTrace();
                 }
+                e.printStackTrace();
               } catch (Exception e) {
                 e.printStackTrace();
               }
