@@ -22,6 +22,8 @@ public class TCPClient extends Client {
   private Socket serverSocket;
   private ObjectOutputStream oos;
   private ObjectInputStream ois;
+  
+  protected int xid; // for use by performance analysis
 
   private TCPClient() {
   }
@@ -816,6 +818,7 @@ public class TCPClient extends Client {
 
       try {
         int xid = (int) future.get();
+        this.xid = xid;
         System.out.println("Transaction id: " + xid);
       } catch (Exception e) {
         e.printStackTrace();
