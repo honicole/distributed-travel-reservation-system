@@ -222,7 +222,7 @@ public class TCPMiddleware extends Middleware {
                       req_with_id = new UserCommand(Command.fromString("AddCustomerID"), args_with_id);
                     } else {
                       sockets_out.get(clientSocket).get(server).writeObject(req_with_id);
-                      success &= (Boolean) sockets_in.get(server).get(clientSocket).readObject();
+                      success &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
                     }
                   }
                   result = success ? id : -1;
