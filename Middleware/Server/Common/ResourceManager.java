@@ -22,8 +22,9 @@ public class ResourceManager implements IResourceManager {
   protected String m_name = "";
   protected RMHashMap m_data = new RMHashMap();
   protected LockManager lockManager;
-  
-  
+  protected Map<Integer, List<String>> write_list = new HashMap<>();
+  protected Map<Integer, Map<String, RMItem>> pre_image = new HashMap<>();
+
   public ResourceManager() {
     lockManager = new LockManager();
   }
@@ -148,13 +149,17 @@ public class ResourceManager implements IResourceManager {
     Trace.info("RM::addFlight(" + xid + ", " + flightNum + ", " + flightSeats + ", $" + flightPrice + ") called");
     lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
     Flight curObj = (Flight) readData(xid, Flight.getKey(flightNum));
+
     if (curObj == null) {
       // Doesn't exist yet, add it
       Flight newObj = new Flight(flightNum, flightSeats, flightPrice);
+      addToWriteList(xid, newObj.getKey());
       writeData(xid, newObj.getKey(), newObj);
       Trace.info("RM::addFlight(" + xid + ") created new flight " + flightNum + ", seats=" + flightSeats + ", price=$"
           + flightPrice);
     } else {
+      addToWriteList(xid, curObj.getKey());
+      addToPreImage(xid, curObj.getKey(), curObj);
       // Add seats to existing flight and update the price if greater than zero
       curObj.setCount(curObj.getCount() + flightSeats);
       if (flightPrice > 0) {
@@ -176,15 +181,21 @@ public class ResourceManager implements IResourceManager {
     if (curObj == null) {
       // Car location doesn't exist yet, add it
       Car newObj = new Car(location, count, price);
+      addToWriteList(xid, newObj.getKey());
+      Trace.info("RM::ADD TO WRITE LIST XID = " + xid + " KEY = " + newObj.getKey());
       writeData(xid, newObj.getKey(), newObj);
       Trace
           .info("RM::addCars(" + xid + ") created new location " + location + ", count=" + count + ", price=$" + price);
     } else {
+      addToWriteList(xid, curObj.getKey());
+      addToPreImage(xid, curObj.getKey(), curObj);
+      Trace.info("RM::ADD TO PRE IMAGE XID = " + xid + " KEY = " + curObj.getKey() + " OBJ = " + curObj);
       // Add count to existing car location and update price if greater than zero
       curObj.setCount(curObj.getCount() + count);
       if (price > 0) {
         curObj.setPrice(price);
       }
+      Trace.info("RM::ADD TO WRITE LIST XID = " + xid + " KEY = " + curObj.getKey());
       writeData(xid, curObj.getKey(), curObj);
       Trace.info("RM::addCars(" + xid + ") modified existing location " + location + ", count=" + curObj.getCount()
           + ", price=$" + price);
@@ -201,10 +212,13 @@ public class ResourceManager implements IResourceManager {
     if (curObj == null) {
       // Room location doesn't exist yet, add it
       Room newObj = new Room(location, count, price);
+      addToWriteList(xid, newObj.getKey());
       writeData(xid, newObj.getKey(), newObj);
       Trace.info(
           "RM::addRooms(" + xid + ") created new room location " + location + ", count=" + count + ", price=$" + price);
     } else {
+      addToWriteList(xid, curObj.getKey());
+      addToPreImage(xid, curObj.getKey(), curObj);
       // Add count to existing object and update price if greater than zero
       curObj.setCount(curObj.getCount() + count);
       if (price > 0) {
@@ -284,6 +298,7 @@ public class ResourceManager implements IResourceManager {
         + String.valueOf(Math.round(Math.random() * 100 + 1)));
     Customer customer = new Customer(cid);
     lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
+    addToWriteList(xid, customer.getKey());
     writeData(xid, customer.getKey(), customer);
     Trace.info("RM::newCustomer(" + cid + ") returns ID=" + cid);
     return cid;
@@ -295,6 +310,7 @@ public class ResourceManager implements IResourceManager {
     if (customer == null) {
       customer = new Customer(customerID);
       lockManager.Lock(xid, "m_data", TransactionLockObject.LockType.LOCK_WRITE);
+      addToWriteList(xid, customer.getKey());
       writeData(xid, customer.getKey(), customer);
       Trace.info("RM::newCustomer(" + xid + ", " + customerID + ") created a new customer");
       return true;
@@ -316,6 +332,8 @@ public class ResourceManager implements IResourceManager {
       RMHashMap reservations = customer.getReservations();
       for (String reservedKey : reservations.keySet()) {
         ReservedItem reserveditem = customer.getReservedItem(reservedKey);
+        addToWriteList(xid, reservedKey);
+        addToPreImage(xid, reservedKey, reserveditem);
         Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditem.getKey() + " "
             + reserveditem.getCount() + " times");
         ReservableItem item = (ReservableItem) readData(xid, reserveditem.getKey());
@@ -328,6 +346,8 @@ public class ResourceManager implements IResourceManager {
       }
 
       // Remove the customer from the storage
+      addToWriteList(xid, customer.getKey());
+      addToPreImage(xid, customer.getKey(), customer);
       removeData(xid, customer.getKey());
       Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") succeeded");
       return true;
@@ -363,7 +383,14 @@ public class ResourceManager implements IResourceManager {
   public boolean commit(int transactionId)
       throws RemoteException, TransactionAbortedException, InvalidTransactionException {
     Trace.info("RM::commit(" + transactionId + ") called");
-    // TODO
+
+    if (write_list.get(transactionId) != null) {
+      write_list.get(transactionId).clear();
+    }
+    if (pre_image.get(transactionId) != null) {
+      pre_image.get(transactionId).clear();
+    }
+
     if (lockManager.UnlockAll(transactionId)) {
       Trace.info("RM::commit(" + transactionId + ") succeeded");
       return true;
@@ -373,18 +400,32 @@ public class ResourceManager implements IResourceManager {
   }
 
   @Override
-  public void abort(int transactionId) throws RemoteException, InvalidTransactionException {
+  public void abort(int transactionId) throws RemoteException, InvalidTransactionException, DeadlockException {
     Trace.info("RM::abort(" + transactionId + ") called");
-    // TODO
+
+    if (write_list.get(transactionId) != null) {
+      write_list.get(transactionId).forEach(key -> {
+        removeData(transactionId, key);
+      });
+    }
+
+    if (pre_image.get(transactionId) != null) {
+      pre_image.get(transactionId).forEach((key, item) -> {
+        writeData(transactionId, key, item);
+      });
+
+    }
+
     lockManager.UnlockAll(transactionId);
     Trace.info("RM::abort(" + transactionId + ") succeeded");
     return;
+
   }
 
   @Override
   public boolean shutdown() throws RemoteException {
     Trace.info("RM::shutdown() Shutting down server...");
-    
+
     Timer shutdown = new Timer();
     shutdown.schedule(new TimerTask() {
       @Override
@@ -393,5 +434,23 @@ public class ResourceManager implements IResourceManager {
       }
     }, 3000);
     return true;
+  }
+
+  private void addToWriteList(int xid, String key) {
+    List<String> list = write_list.get(xid);
+    if (list == null) {
+      list = new ArrayList<String>();
+    }
+    list.add(key);
+    write_list.put(xid, list);
+  }
+
+  private void addToPreImage(int xid, String key, RMItem item) {
+    Map<String, RMItem> map = pre_image.get(xid);
+    if (map == null) {
+      map = new HashMap<String, RMItem>();
+    }
+    map.put(key, (RMItem) item.clone());
+    pre_image.put(xid, map);
   }
 }
