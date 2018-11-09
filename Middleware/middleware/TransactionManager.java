@@ -91,7 +91,7 @@ public class TransactionManager {
       this.middleware.abort(transactionId, rm);
     }
 
-    setStatus(transactionId, Status.ABORTING);
+    setStatus(transactionId, Status.ABORTED);
     Trace.info("TM::abort(" + transactionId + ") Transaction aborted");
     return true;
   }

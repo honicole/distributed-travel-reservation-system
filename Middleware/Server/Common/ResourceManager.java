@@ -382,13 +382,15 @@ public class ResourceManager implements IResourceManager {
 
   @Override
   public boolean shutdown() throws RemoteException {
+    Trace.info("RM::shutdown() Shutting down server...");
+    
     Timer shutdown = new Timer();
     shutdown.schedule(new TimerTask() {
       @Override
       public void run() {
         System.exit(0);
       }
-    }, 1000);
+    }, 3000);
     return true;
   }
 }

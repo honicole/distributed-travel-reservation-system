@@ -12,7 +12,7 @@ public class DeadlockException extends Exception
 		m_xid = xid;
 	}
 
-	int getXId()
+	public int getXid()
 	{
 		return m_xid;
 	}

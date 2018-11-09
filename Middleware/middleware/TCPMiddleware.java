@@ -17,6 +17,7 @@ import java.util.concurrent.Executors;
 
 import Client.Command;
 import Client.UserCommand;
+import Server.LockManager.DeadlockException;
 import Server.TCP.TCPResourceManager;
 import exceptions.InvalidTransactionException;
 
@@ -124,7 +125,7 @@ public class TCPMiddleware extends Middleware {
     }
 
     @Override
-    public void onNewConnection(Socket clientSocket) {
+    public void onNewConnection(Socket clientSocket) throws DeadlockException {
       Runnable r = () -> {
         try (ObjectOutputStream client_out = new ObjectOutputStream(clientSocket.getOutputStream());
             ObjectInputStream client_in = new ObjectInputStream(clientSocket.getInputStream());) {
@@ -298,7 +299,11 @@ public class TCPMiddleware extends Middleware {
               }
               return result;
             }, executor);
-            client_out.writeObject(future.get());
+            Object result = future.get();
+            if (result instanceof DeadlockException) {
+              TM.abort(((DeadlockException) result).getXid());
+            }
+            client_out.writeObject(result);
           }
         } catch (EOFException e) {
           System.out.println("Connection closed.");

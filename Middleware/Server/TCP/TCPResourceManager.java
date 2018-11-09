@@ -1,6 +1,7 @@
 package Server.TCP;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
@@ -10,6 +11,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import Server.Common.ResourceManager;
+import Server.LockManager.DeadlockException;
 import Client.Command;
 import Client.UserCommand;
 
@@ -60,7 +62,7 @@ public class TCPResourceManager extends ResourceManager {
   class ResourceManagerListenerImpl implements ResourceManagerListener {
 
     @Override
-    public void onNewConnection(Socket socket) {
+    public void onNewConnection(Socket socket) throws DeadlockException {
       Runnable r = () -> {
         try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
@@ -148,6 +150,12 @@ public class TCPResourceManager extends ResourceManager {
                   break;
                 }
                 return true;
+              } catch (DeadlockException e) {
+                try {
+                  oos.writeObject(e);
+                } catch (IOException e1) {
+                  e1.printStackTrace();
+                }
               } catch (Exception e) {
                 e.printStackTrace();
               }
