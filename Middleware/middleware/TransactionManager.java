@@ -1,6 +1,7 @@
 package middleware;
 
 import java.io.Serializable;
+import java.net.Socket;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,7 +14,7 @@ import exceptions.InvalidTransactionException;
 import exceptions.TransactionAbortedException;
 
 public class TransactionManager {
-  private static final long TIMEOUT = 30000;
+  private static final long TIMEOUT = 60000;
   private int xid;
   private Map<Integer, Transaction> transactions;
   private Map<Integer, Timer> time_to_live;
@@ -47,7 +48,7 @@ public class TransactionManager {
     return xid;
   }
 
-  public boolean commit(int transactionId)
+  public boolean commit(Socket socket, int transactionId)
       throws RemoteException, TransactionAbortedException, InvalidTransactionException {
     Transaction transaction = transactions.get(transactionId);
 
@@ -64,7 +65,7 @@ public class TransactionManager {
 
     // should check first if everything can be committed?
     for (String rm : transaction.resourceManagersList) {
-      this.middleware.commit(transactionId, rm);
+      this.middleware.commit(socket, transactionId, rm);
     }
 
     setStatus(transactionId, Status.COMMITTED);
@@ -72,7 +73,7 @@ public class TransactionManager {
     return true;
   }
 
-  public boolean abort(int transactionId) throws RemoteException, InvalidTransactionException {
+  public boolean abort(Socket socket, int transactionId) throws RemoteException, InvalidTransactionException {
     Transaction transaction = transactions.get(transactionId);
 
     if (transaction == null) {
@@ -88,7 +89,7 @@ public class TransactionManager {
 
     // should check first if everything can be aborted?
     for (String rm : transaction.resourceManagersList) {
-      this.middleware.abort(transactionId, rm);
+      this.middleware.abort(socket, transactionId, rm);
     }
 
     setStatus(transactionId, Status.ABORTED);
@@ -126,7 +127,7 @@ public class TransactionManager {
     }
   }
 
-  public void resetTimeToLive(int id) {
+  public void resetTimeToLive(Socket socket, int id) {
     if (transactions.containsKey(id)) {
       if (time_to_live.containsKey(id)) {
         time_to_live.get(id).cancel();
@@ -138,7 +139,7 @@ public class TransactionManager {
         public void run() {
           if (transactions.containsKey(id) && transactions.get(id).status == Status.ACTIVE) {
             try {
-              abort(id);
+              abort(socket, id);
             } catch (InvalidTransactionException e) {
               e.printStackTrace();
             } catch (RemoteException e) {

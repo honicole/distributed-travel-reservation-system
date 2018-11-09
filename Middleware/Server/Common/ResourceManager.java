@@ -22,7 +22,8 @@ public class ResourceManager implements IResourceManager {
   protected String m_name = "";
   protected RMHashMap m_data = new RMHashMap();
   protected LockManager lockManager;
-
+  
+  
   public ResourceManager() {
     lockManager = new LockManager();
   }

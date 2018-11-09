@@ -19,7 +19,7 @@ public class TCPClient extends Client {
   private static int s_serverPort = 1099;
   private static Executor executor = Executors.newFixedThreadPool(8);
   private Socket socket;
-  private static Socket serverSocket;
+  private Socket serverSocket;
   private ObjectOutputStream oos;
   private ObjectInputStream ois;
 
@@ -140,7 +140,6 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Flight could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
-          break;
         } else if ((boolean) result) {
           System.out.println("Flight added");
         } else {
@@ -176,7 +175,6 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Cars could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
-          break;
         } else if ((boolean) result) {
           System.out.println("Cars added");
         } else {
@@ -212,7 +210,6 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Rooms could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
-          break;
         } else if ((boolean) result) {
           System.out.println("Rooms added");
         } else {
@@ -245,7 +242,6 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Customer could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
-          break;
         } else {
           int customer = (int) result;
           System.out.println("Add customer ID: " + customer);
@@ -278,7 +274,6 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Customer could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
-          break;
         } else if ((boolean) result) {
           System.out.println("Add customer ID: " + arguments.elementAt(2));
         } else {
@@ -312,7 +307,6 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Flight could not be deleted");
           System.out.println("Deadlock detected -- transaction aborted");
-          break;
         } else if ((boolean) result) {
           System.out.println("Flight Deleted");
         } else {
@@ -346,7 +340,6 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Cars could not be deleted");
           System.out.println("Deadlock detected -- transaction aborted");
-          break;
         } else if ((boolean) result) {
           System.out.println("Cars Deleted");
         } else {
@@ -380,7 +373,6 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Rooms could not be deleted");
           System.out.println("Deadlock detected -- transaction aborted");
-          break;
         } else if ((boolean) result) {
           System.out.println("Rooms Deleted");
         } else {

@@ -27,7 +27,7 @@ public class TCPMiddleware extends Middleware {
   private static int s_serverPort = 1099;
   private static String[] s_serverHosts;
   private static int[] s_serverPorts;
-  private static Executor executor = Executors.newFixedThreadPool(8);
+  private Executor executor = Executors.newFixedThreadPool(8);
   private static MiddlewareListener listener;
   private static TransactionManager TM;
 
@@ -84,17 +84,17 @@ public class TCPMiddleware extends Middleware {
 
   class MiddlewareListenerImpl implements MiddlewareListener {
 
-    private Map<String, ObjectOutputStream> sockets_out = new HashMap<>();
-    private Map<String, ObjectInputStream> sockets_in = new HashMap<>();
+    private Map<Socket, Map<String, ObjectOutputStream>> sockets_out = new HashMap<>();
+    private Map<Socket, Map<String, ObjectInputStream>> sockets_in = new HashMap<>();
 
-    public boolean commit(int transactionId, String rm) {
+    public boolean commit(Socket clientSocket, int transactionId, String rm) {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         Object result = null;
         String[] cmd_args = new String[] { "commit", Integer.toString(transactionId) };
         UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
         try {
-          sockets_out.get(rm).writeObject(req);
-          result = sockets_in.get(rm).readObject();
+          sockets_out.get(clientSocket).get(rm).writeObject(req);
+          result = sockets_in.get(clientSocket).get(rm).readObject();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -111,12 +111,12 @@ public class TCPMiddleware extends Middleware {
       return false;
     }
 
-    public void abort(int transactionId, String rm) {
+    public void abort(Socket clientSocket, int transactionId, String rm) {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         String[] cmd_args = new String[] { "abort", Integer.toString(transactionId) };
         UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
         try {
-          sockets_out.get(rm).writeObject(req);
+          sockets_out.get(clientSocket).get(rm).writeObject(req);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -131,11 +131,15 @@ public class TCPMiddleware extends Middleware {
             ObjectInputStream client_in = new ObjectInputStream(clientSocket.getInputStream());) {
           System.out.println("Connected to client.");
           try {
+            Map<String, ObjectOutputStream> socket_1 = new HashMap<>();
+            Map<String, ObjectInputStream> socket_2 = new HashMap<>();
             for (int i = 0; i < s_serverHosts.length; i++) {
               Socket socket = new Socket(InetAddress.getByName(s_serverHosts[i]), s_serverPorts[i]);
-              sockets_out.put(s_serverHosts[i], new ObjectOutputStream(socket.getOutputStream()));
-              sockets_in.put(s_serverHosts[i], new ObjectInputStream(socket.getInputStream()));
+              socket_1.put(s_serverHosts[i], new ObjectOutputStream(socket.getOutputStream()));
+              socket_2.put(s_serverHosts[i], new ObjectInputStream(socket.getInputStream()));
             }
+            sockets_out.put(clientSocket, socket_1);
+            sockets_in.put(clientSocket, socket_2);
           } catch (Exception e) {
             e.printStackTrace();
           }
@@ -154,7 +158,7 @@ public class TCPMiddleware extends Middleware {
                   transactionId = Integer.valueOf(args[1]);
                   switch (TM.getStatus(transactionId)) {
                   case ACTIVE:
-                    TM.resetTimeToLive(transactionId);
+                    TM.resetTimeToLive(clientSocket, transactionId);
                     break;
                   case COMMITTED:
                     throw new InvalidTransactionException("The transaction was committed.");
@@ -179,8 +183,8 @@ public class TCPMiddleware extends Middleware {
                 case "ReserveFlight":
                   server = s_serverHosts[0];
                   TM.addResourceManager(transactionId, server);
-                  sockets_out.get(server).writeObject(req);
-                  result = sockets_in.get(server).readObject();
+                  sockets_out.get(clientSocket).get(server).writeObject(req);
+                  result = sockets_in.get(clientSocket).get(server).readObject();
                   break;
                 case "AddCars":
                 case "DeleteCars":
@@ -189,8 +193,8 @@ public class TCPMiddleware extends Middleware {
                 case "ReserveCar":
                   server = s_serverHosts[1];
                   TM.addResourceManager(transactionId, server);
-                  sockets_out.get(server).writeObject(req);
-                  result = sockets_in.get(server).readObject();
+                  sockets_out.get(clientSocket).get(server).writeObject(req);
+                  result = sockets_in.get(clientSocket).get(server).readObject();
                   break;
                 case "AddRooms":
                 case "DeleteRooms":
@@ -199,8 +203,8 @@ public class TCPMiddleware extends Middleware {
                 case "ReserveRoom":
                   server = s_serverHosts[2];
                   TM.addResourceManager(transactionId, server);
-                  sockets_out.get(server).writeObject(req);
-                  result = sockets_in.get(server).readObject();
+                  sockets_out.get(clientSocket).get(server).writeObject(req);
+                  result = sockets_in.get(clientSocket).get(server).readObject();
                   break;
                 case "AddCustomer":
                   int id = -1;
@@ -211,14 +215,14 @@ public class TCPMiddleware extends Middleware {
                     TM.addResourceManager(transactionId, server);
                     if (i == 0) {
                       // If first server, generate customer ID and repackage for subsequent servers
-                      sockets_out.get(server).writeObject(req);
-                      id = (int) sockets_in.get(server).readObject();
+                      sockets_out.get(clientSocket).get(server).writeObject(req);
+                      id = (int) sockets_in.get(clientSocket).get(server).readObject();
                       args_with_id = Arrays.copyOf(args, args.length + 1);
                       args_with_id[args_with_id.length - 1] = Integer.toString(id);
                       req_with_id = new UserCommand(Command.fromString("AddCustomerID"), args_with_id);
                     } else {
-                      sockets_out.get(server).writeObject(req_with_id);
-                      success &= (Boolean) sockets_in.get(server).readObject();
+                      sockets_out.get(clientSocket).get(server).writeObject(req_with_id);
+                      success &= (Boolean) sockets_in.get(server).get(clientSocket).readObject();
                     }
                   }
                   result = success ? id : -1;
@@ -227,8 +231,8 @@ public class TCPMiddleware extends Middleware {
                 case "DeleteCustomerID":
                   for (String s : s_serverHosts) {
                     TM.addResourceManager(transactionId, s);
-                    sockets_out.get(s).writeObject(req);
-                    success &= (Boolean) sockets_in.get(s).readObject();
+                    sockets_out.get(clientSocket).get(s).writeObject(req);
+                    success &= (Boolean) sockets_in.get(clientSocket).get(s).readObject();
                   }
                   result = success;
                   break;
@@ -238,8 +242,8 @@ public class TCPMiddleware extends Middleware {
                   for (int i = 0; i < s_serverHosts.length; i++) {
                     server = s_serverHosts[i];
                     TM.addResourceManager(transactionId, server);
-                    sockets_out.get(server).writeObject(req);
-                    String bill = (String) sockets_in.get(server).readObject();
+                    sockets_out.get(clientSocket).get(server).writeObject(req);
+                    String bill = (String) sockets_in.get(clientSocket).get(server).readObject();
                     if (i == 0) {
                       customer_bill = bill;
                     } else {
@@ -261,8 +265,8 @@ public class TCPMiddleware extends Middleware {
                   for (int i = 3; i < args.length - 3; i++) {
                     bundle_args = new String[] { "ReserveFlight", xid, cid, req.get(i) };
                     command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
-                    sockets_out.get(server).writeObject(command);
-                    reserved &= (Boolean) sockets_in.get(server).readObject();
+                    sockets_out.get(clientSocket).get(server).writeObject(command);
+                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
                   }
 
                   if (Boolean.valueOf(req.get(args.length - 2))) {
@@ -270,8 +274,8 @@ public class TCPMiddleware extends Middleware {
                     TM.addResourceManager(transactionId, server);
                     bundle_args = new String[] { "ReserveCar", xid, cid, location };
                     command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
-                    sockets_out.get(server).writeObject(command);
-                    reserved &= (Boolean) sockets_in.get(server).readObject();
+                    sockets_out.get(clientSocket).get(server).writeObject(command);
+                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
                   }
 
                   if (Boolean.valueOf(req.get(args.length - 1))) {
@@ -279,8 +283,8 @@ public class TCPMiddleware extends Middleware {
                     TM.addResourceManager(transactionId, server);
                     bundle_args = new String[] { "ReserveRoom", xid, cid, location };
                     command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
-                    sockets_out.get(server).writeObject(command);
-                    reserved &= (Boolean) sockets_in.get(server).readObject();
+                    sockets_out.get(clientSocket).get(server).writeObject(command);
+                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
                   }
                   result = reserved;
                   break;
@@ -288,10 +292,10 @@ public class TCPMiddleware extends Middleware {
                   result = (int) TM.start();
                   break;
                 case "commit":
-                  result = TM.commit(transactionId);
+                  result = TM.commit(clientSocket, transactionId);
                   break;
                 case "abort":
-                  result = TM.abort(transactionId);
+                  result = TM.abort(clientSocket, transactionId);
                   break;
                 }
               } catch (Exception e) {
@@ -301,7 +305,7 @@ public class TCPMiddleware extends Middleware {
             }, executor);
             Object result = future.get();
             if (result instanceof DeadlockException) {
-              TM.abort(((DeadlockException) result).getXid());
+              TM.abort(clientSocket, ((DeadlockException) result).getXid());
             }
             client_out.writeObject(result);
           }
