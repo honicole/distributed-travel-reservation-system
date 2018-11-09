@@ -162,7 +162,8 @@ public class ResourceManager implements IResourceManager {
       Flight newObj = new Flight(flightNum, flightSeats, flightPrice);
       
       // if flight not in pre_image
-      if (!pre_image.get(xid).containsKey(Flight.getKey(flightNum))) {
+      Map a = pre_image.get(xid);
+      if (!a.containsKey(Flight.getKey(flightNum))) {
         // set "previous" flight to null so that if the transaction aborts, the flight will still have a value
         pre_image.get(xid).put(Flight.getKey(flightNum), null);
       }

@@ -255,6 +255,12 @@ public class TCPMiddleware extends Middleware {
                   break;
                 case "Bundle":
                   // TODO: check that all are available before reserving
+                  
+                  /**
+                   * try to get all the locks on RM level, eg flight id
+                   * 
+                   * if false: abort, then release
+                   */
                   String xid = req.get(1);
                   String cid = req.get(2);
                   String location = req.get(args.length - 3);
