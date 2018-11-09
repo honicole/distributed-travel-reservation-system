@@ -5,9 +5,14 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
+import static Client.Command.*;
 
 public class PerformanceAnalyzer extends TCPClient {
   
@@ -18,6 +23,10 @@ public class PerformanceAnalyzer extends TCPClient {
   private static Socket serverSocket;
   private ObjectOutputStream oos;
   private ObjectInputStream ois;
+  
+  private UserCommand[] commands = {
+    new UserCommand(AddFlight, new String[] {"1", "1", "1", "100"}),
+  };
 
   public PerformanceAnalyzer(Socket socket) throws Exception {
     super(socket);
@@ -54,8 +63,9 @@ public class PerformanceAnalyzer extends TCPClient {
       this.oos = oos;
       this.ois = ois;
 
-      // in loop:
-      // execute(cmd, arguments);
+      for (UserCommand uc: commands) {
+        execute(uc.getCommand(), new Vector<String>(Arrays.asList(uc.getArgs())));
+      }
       
     } catch (Exception e) {
       System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27 + "[0mUncaught exception");
