@@ -62,6 +62,7 @@ public enum Command {
   }
 
   public String toString() {
+    if (m_args != null) return name();
     String ret = name() + ": " + m_description + "\n";
     ret += "Usage: " + name() + "," + m_args;
     return ret;

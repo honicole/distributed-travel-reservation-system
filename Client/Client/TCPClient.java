@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.rmi.RemoteException;
+import java.util.Arrays;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -20,8 +21,8 @@ public class TCPClient extends Client {
   private static Executor executor = Executors.newFixedThreadPool(8);
   private Socket socket;
   private Socket serverSocket;
-  private ObjectOutputStream oos;
-  private ObjectInputStream ois;
+  protected ObjectOutputStream oos;
+  protected ObjectInputStream ois;
   
   protected int xid; // for use by performance analysis
 
@@ -892,6 +893,10 @@ public class TCPClient extends Client {
       System.out.println("Quitting client");
       System.exit(0);
     }
+  }
+  
+  public void execute(UserCommand uc) throws NumberFormatException, RemoteException {
+    execute(uc.getCommand(), new Vector<String>(Arrays.asList(uc.getArgs())));
   }
 
 }

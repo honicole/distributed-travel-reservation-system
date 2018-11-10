@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -21,21 +22,18 @@ public class PerformanceAnalyzer extends TCPClient {
   private static Executor executor = Executors.newFixedThreadPool(8);
   private Socket socket;
   private static Socket serverSocket;
-  private ObjectOutputStream oos;
-  private ObjectInputStream ois;
+  
+  private static final int NUM_TRANSACTIONS = 1;
+  
+  private static boolean multipleClients = false;
+  
+  Random random = new Random();
   
   
   // could have multiple lists, like itinery, etc
-  private UserCommand[] commands = {
-    new UserCommand(AddFlight, new String[] {"", "1", "1", "1", "100"}),
-    
-    // need to do a logical sequence of commands 
-    // start 
-    // addFlight/Cars/..
-    // Query
-    // Get cx
-    // Delete
-  };
+  private UserCommand[] commands;
+  
+  private static final UserCommand START = new UserCommand(start, new String[] {"start"});
 
   public PerformanceAnalyzer(Socket socket) throws Exception {
     super(socket);
@@ -50,8 +48,11 @@ public class PerformanceAnalyzer extends TCPClient {
       s_serverPort = Integer.valueOf(args[1]);
     }
     if (args.length > 2) {
+      multipleClients = Boolean.parseBoolean(args[2]);
+    }
+    if (args.length > 3) {
       System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27
-          + "[0mUsage: java client.PerformanceAnalyzer [server_hostname [server_port]]");
+          + "[0mUsage: java client.PerformanceAnalyzer [server_hostname [server_port]] multipleClients(true/false)");
       System.exit(1);
     }
 
@@ -61,6 +62,7 @@ public class PerformanceAnalyzer extends TCPClient {
     } catch (Exception e) {
       e.printStackTrace();
     }
+    System.out.println("PA: " + performanceAnalyzer);
     performanceAnalyzer.runCommand();
 
     // Set the security policy
@@ -83,15 +85,23 @@ public class PerformanceAnalyzer extends TCPClient {
       this.oos = oos;
       this.ois = ois;
 
-      for (UserCommand uc: commands) {
-        long start = System.currentTimeMillis();
-        execute(uc.getCommand(), new Vector<String>(Arrays.asList(uc.getArgs())));
+      for(int i = 0; i < NUM_TRANSACTIONS; i++) {
+        execute(START);
+        //waitFor(100);
+        int xid = this.xid;
         
-        long now = System.currentTimeMillis();
-        if(now - start < 500) {
-          // wait
-          while(System.currentTimeMillis() - start < 500)
-            ;
+        commands = createUserCommands(xid);
+        
+        for (UserCommand uc: commands) {
+          long start = System.currentTimeMillis();
+          execute(uc);
+          
+          long now = System.currentTimeMillis();
+          if(multipleClients && now - start < 500) {
+            // wait
+            while(System.currentTimeMillis() - start < 500)
+              ;
+          }
         }
       }
       
@@ -101,5 +111,46 @@ public class PerformanceAnalyzer extends TCPClient {
       System.exit(1);
     }
   }
+  
+  private UserCommand[] createUserCommands(int xid) {
+    if (!multipleClients) {
+      // Customer reserves a flight
+      String xid_ = Integer.toString(xid);
+      String customerId = Integer.toString(randomNumberBetween(1, 20));
+      String flightNumber = Integer.toString(randomNumberBetween(100, 199));
+      String numberOfSeats = Integer.toString(50*randomNumberBetween(1, 6));
+      String price = Integer.toString(100*randomNumberBetween(1, 9) + 99);
+      
+      UserCommand[] commands = {
+        new UserCommand(AddFlight, new String[] {"addFlight", xid_, flightNumber, numberOfSeats, price}),
+        new UserCommand(AddCustomerID, new String[] {"addCustomerID", xid_, customerId}),
+        new UserCommand(QueryFlight, new String[] {"queryFlight", xid_, flightNumber}),
+        new UserCommand(QueryFlightPrice, new String[] {"queryFlightPrice", xid_, flightNumber}),
+        new UserCommand(ReserveFlight, new String[] {"reserveFlight", xid_, customerId}),
+        new UserCommand(QueryCustomer, new String[] {"queryCustomer", xid_, customerId}),
+        new UserCommand(commit, new String[] {"commit", xid_}),
+      };
+      
+      return commands;
+    } else {
+      return null;
+    }
+  }
 
+  private void waitFor(int millis) {
+    try {
+      Thread.sleep(millis);
+    } catch (InterruptedException e) {
+    }
+  }
+  
+  /**
+   * @param min
+   * @param max
+   * @return a random integer between min and max, inclusive
+   */
+  private int randomNumberBetween(int min, int max) {
+    return random.nextInt(max + 1 - min) + min;
+  }
+  
 }
