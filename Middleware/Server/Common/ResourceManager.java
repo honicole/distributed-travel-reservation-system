@@ -162,11 +162,11 @@ public class ResourceManager implements IResourceManager {
       Flight newObj = new Flight(flightNum, flightSeats, flightPrice);
       
       // if flight not in pre_image
-      Map a = pre_image.get(xid);
-      if (!a.containsKey(Flight.getKey(flightNum))) {
-        // set "previous" flight to null so that if the transaction aborts, the flight will still have a value
-        pre_image.get(xid).put(Flight.getKey(flightNum), null);
-      }
+//      Map a = pre_image.get(xid);
+//      if (!a.containsKey(Flight.getKey(flightNum))) { // NullPointerException
+//        // set "previous" flight to null so that if the transaction aborts, the flight will still have a value
+//        pre_image.get(xid).put(Flight.getKey(flightNum), null);
+//      }
       
       addToWriteList(xid, newObj.getKey());
       writeData(xid, newObj.getKey(), newObj);
@@ -176,9 +176,9 @@ public class ResourceManager implements IResourceManager {
       addToWriteList(xid, curObj.getKey());
       
       // if flight not in pre_image
-      if (!pre_image.get(xid).containsKey(Flight.getKey(flightNum))) {
+      //if (!pre_image.get(xid).containsKey(Flight.getKey(flightNum))) {
         addToPreImage(xid, curObj.getKey(), curObj);
-      }
+      //}
       
       // Add seats to existing flight and update the price if greater than zero
       curObj.setCount(curObj.getCount() + flightSeats);
@@ -203,9 +203,9 @@ public class ResourceManager implements IResourceManager {
       Car newObj = new Car(location, count, price);
       
       // if flight not in pre_image
-      if (!pre_image.get(xid).containsKey(Car.getKey(location))) {
-        pre_image.get(xid).put(Car.getKey(location), null);
-      }
+//      if (!pre_image.get(xid).containsKey(Car.getKey(location))) {
+//        pre_image.get(xid).put(Car.getKey(location), null);
+//      }
       
       addToWriteList(xid, newObj.getKey());
       Trace.info("RM::ADD TO WRITE LIST XID = " + xid + " KEY = " + newObj.getKey());
@@ -216,9 +216,9 @@ public class ResourceManager implements IResourceManager {
       addToWriteList(xid, curObj.getKey());
       
       // if car not in pre_image
-      if (!pre_image.get(xid).containsKey(Car.getKey(location))) {
+      //if (!pre_image.get(xid).containsKey(Car.getKey(location))) {
         addToPreImage(xid, curObj.getKey(), curObj);
-      }
+      //}
       
       Trace.info("RM::ADD TO PRE IMAGE XID = " + xid + " KEY = " + curObj.getKey() + " OBJ = " + curObj);
       // Add count to existing car location and update price if greater than zero
@@ -245,9 +245,9 @@ public class ResourceManager implements IResourceManager {
       Room newObj = new Room(location, count, price);
       
       // if room not in pre_image
-      if (!pre_image.get(xid).containsKey(Room.getKey(location))) {
-        pre_image.get(xid).put(Room.getKey(location), null);
-      }
+//      if (!pre_image.get(xid).containsKey(Room.getKey(location))) {
+//        pre_image.get(xid).put(Room.getKey(location), null);
+//      }
       
       addToWriteList(xid, newObj.getKey());
       writeData(xid, newObj.getKey(), newObj);
@@ -257,9 +257,9 @@ public class ResourceManager implements IResourceManager {
       addToWriteList(xid, curObj.getKey());
       
       // if room not in pre_image
-      if (!pre_image.get(xid).containsKey(Room.getKey(location))) {
+      //if (!pre_image.get(xid).containsKey(Room.getKey(location))) {
         addToPreImage(xid, curObj.getKey(), curObj);
-      }
+      //}
       
       // Add count to existing object and update price if greater than zero
       curObj.setCount(curObj.getCount() + count);

@@ -1,5 +1,5 @@
-if [[ "$#" -ne 2 ]]; then
-    echo "# Usage: ./run_perf_analysis.sh [<middleware_hostname> [<middleware_port>]]"
+if [[ "$#" -ne 3 ]]; then
+    echo "# Usage: ./run_perf_analysis.sh [<middleware_hostname> [<middleware_port>]] multipleClients(true/false)"
     exit 1
 fi
 
