@@ -1,6 +1,9 @@
 package Server.TCP;
 
+import java.io.BufferedWriter;
 import java.io.EOFException;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -10,10 +13,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import Server.Common.ResourceManager;
-import Server.LockManager.DeadlockException;
 import Client.Command;
 import Client.UserCommand;
+import Server.Common.ResourceManager;
+import Server.LockManager.DeadlockException;
 
 public class TCPResourceManager extends ResourceManager {
   private static int s_serverPort = 1099;
@@ -21,6 +24,15 @@ public class TCPResourceManager extends ResourceManager {
 
   private Executor executor = Executors.newFixedThreadPool(8);
   private ResourceManagerListener listener;
+  
+  /**
+   * Set this to {@code true} only when performing performance analysis
+   */
+  private static final boolean LOG_PERFORMANCE = true;
+  private static final String FILENAME = "./log.txt";
+  private static File logFile = new File(FILENAME);
+  private static StringBuilder log = new StringBuilder();
+  private static int counter = 0;
 
   private TCPResourceManager() {
   }
@@ -39,6 +51,23 @@ public class TCPResourceManager extends ResourceManager {
     // Create and install a security manager
     if (System.getSecurityManager() == null) {
       System.setSecurityManager(new SecurityManager());
+    }
+    
+    if (LOG_PERFORMANCE) {
+      if (!logFile.exists()) {
+        try {
+          logFile.createNewFile();
+        } catch (IOException e) {}
+      }
+      
+      // Write log to disk on Ctrl-C
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        try {
+          BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME));
+          writer.write(log.toString());
+          writer.close();
+        } catch (Exception e) {}
+      }));
     }
 
     TCPResourceManager rm = new TCPResourceManager();
@@ -67,9 +96,10 @@ public class TCPResourceManager extends ResourceManager {
         try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
           System.out.println("Connected");
-
+          
           final UserCommand[] fromClient = new UserCommand[1];
           while ((fromClient[0] = (UserCommand) ois.readObject()) != null) {
+            long start = System.currentTimeMillis();
             CompletableFuture future = CompletableFuture.supplyAsync(() -> {
               try {
                 final UserCommand req = fromClient[0];
@@ -149,6 +179,11 @@ public class TCPResourceManager extends ResourceManager {
                   shutdown();
                   break;
                 }
+                
+                if (LOG_PERFORMANCE) {
+                  log.append(counter + "," + args[1] + "," + (System.currentTimeMillis() - start) + "\n");
+                }
+                
                 return true;
               } catch (DeadlockException e) {
                 try {
@@ -157,8 +192,18 @@ public class TCPResourceManager extends ResourceManager {
                   e1.printStackTrace();
                 }
                 e.printStackTrace();
+                
+                if (LOG_PERFORMANCE) {
+                  log.append(counter + ",L," + (System.currentTimeMillis() - start) + "\n");
+                }
               } catch (Exception e) {
                 e.printStackTrace();
+                
+                if (LOG_PERFORMANCE) {
+                  log.append(counter + ",F," + (System.currentTimeMillis() - start) + "\n");
+                }
+              } finally {
+                counter++;
               }
               return false;
             }, executor);

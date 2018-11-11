@@ -1,6 +1,9 @@
 package middleware;
 
+import java.io.BufferedWriter;
 import java.io.EOFException;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -30,6 +33,15 @@ public class TCPMiddleware extends Middleware {
   private Executor executor = Executors.newFixedThreadPool(8);
   private static MiddlewareListener listener;
   private static TransactionManager TM;
+  
+  /**
+   * Set this to {@code true} only when performing performance analysis
+   */
+  private static final boolean LOG_PERFORMANCE = true;
+  private static final String FILENAME = "./log.txt";
+  private static File logFile = new File(FILENAME);
+  private static StringBuilder log = new StringBuilder();
+  private static int counter = 0;
 
   private TCPMiddleware() {
   }
@@ -56,6 +68,23 @@ public class TCPMiddleware extends Middleware {
     // Create and install a security manager
     if (System.getSecurityManager() == null) {
       System.setSecurityManager(new SecurityManager());
+    }
+    
+    if (LOG_PERFORMANCE) {
+      if (!logFile.exists()) {
+        try {
+          logFile.createNewFile();
+        } catch (IOException e) {}
+      }
+      
+      // Write log to disk on Ctrl-C
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        try {
+          BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME));
+          writer.write(log.toString());
+          writer.close();
+        } catch (Exception e) {}
+      }));
     }
 
     TCPMiddleware mw = new TCPMiddleware();
@@ -146,6 +175,7 @@ public class TCPMiddleware extends Middleware {
 
           final UserCommand[] client_command = new UserCommand[1];
           while ((client_command[0] = (UserCommand) client_in.readObject()) != null) {
+            long start = System.currentTimeMillis();
             CompletableFuture future = CompletableFuture.supplyAsync(() -> {
               Object result = null;
               int transactionId = -1;
@@ -304,6 +334,10 @@ public class TCPMiddleware extends Middleware {
                 case "abort":
                   result = TM.abort(clientSocket, transactionId);
                   break;
+                }
+                
+                if (LOG_PERFORMANCE) {
+                  log.append(counter + "," + req.get(0) + "," + (System.currentTimeMillis() - start) + "\n");
                 }
               } catch (Exception e) {
                 e.printStackTrace();
