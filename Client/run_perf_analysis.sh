@@ -3,4 +3,4 @@ if [[ "$#" -ne 3 ]]; then
     exit 1
 fi
 
-java -Djava.security.policy==java.policy -cp ../bin/middleware:../bin Client.PerformanceAnalyzer $1 $2
+java -Djava.security.policy==java.policy -cp ../bin/middleware:../bin Client.PerformanceAnalyzer $1 $2 $3
