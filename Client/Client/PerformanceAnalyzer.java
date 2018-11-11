@@ -23,7 +23,7 @@ public class PerformanceAnalyzer extends TCPClient {
   private Socket socket;
   private static Socket serverSocket;
   
-  private static final int NUM_TRANSACTIONS = 1;
+  private static final int NUM_TRANSACTIONS = 30;
   
   private static boolean multipleClients = false;
   
@@ -94,8 +94,9 @@ public class PerformanceAnalyzer extends TCPClient {
         
         for (UserCommand uc: commands) {
           long start = System.currentTimeMillis();
+          System.out.println(">] " + uc);
           execute(uc);
-          
+          System.out.println();
           long now = System.currentTimeMillis();
           if(multipleClients && now - start < 500) {
             // wait
@@ -126,7 +127,7 @@ public class PerformanceAnalyzer extends TCPClient {
         new UserCommand(AddCustomerID, new String[] {"addCustomerID", xid_, customerId}),
         new UserCommand(QueryFlight, new String[] {"queryFlight", xid_, flightNumber}),
         new UserCommand(QueryFlightPrice, new String[] {"queryFlightPrice", xid_, flightNumber}),
-        new UserCommand(ReserveFlight, new String[] {"reserveFlight", xid_, customerId}),
+        new UserCommand(ReserveFlight, new String[] {"reserveFlight", xid_, customerId, flightNumber}),
         new UserCommand(QueryCustomer, new String[] {"queryCustomer", xid_, customerId}),
         new UserCommand(commit, new String[] {"commit", xid_}),
       };
