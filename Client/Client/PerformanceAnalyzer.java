@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Random;
 
 public class PerformanceAnalyzer extends TCPClient {
@@ -46,9 +47,7 @@ public class PerformanceAnalyzer extends TCPClient {
     if (args.length > 1) {
       s_serverPort = Integer.valueOf(args[1]);
     }
-    if (args.length > 2) {
-      option = Integer.parseInt(args[2]);
-    }
+    
     if (args.length > 3) {
       System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27
           + "[0mUsage: java client.PerformanceAnalyzer [server_hostname [server_port]] option(0-2)(SCSR-SCMR-MCMR)");
@@ -73,6 +72,8 @@ public class PerformanceAnalyzer extends TCPClient {
     PerformanceAnalyzer performanceAnalyzer = null;
     try {
       performanceAnalyzer = new PerformanceAnalyzer(new Socket());
+      System.out.println(Arrays.toString(args));
+      option = Integer.parseInt(args[2]);
     } catch (Exception e) {
       e.printStackTrace();
     }
