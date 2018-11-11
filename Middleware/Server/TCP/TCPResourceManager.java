@@ -30,7 +30,7 @@ public class TCPResourceManager extends ResourceManager {
    */
   private static final boolean LOG_PERFORMANCE = true;
   private static String FILENAME;
-  private static File logFile = new File(FILENA00ME);
+  private static File logFile;
   private static StringBuilder log = new StringBuilder();
   private static int counter = 0;
 
