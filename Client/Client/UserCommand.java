@@ -1,6 +1,7 @@
 package Client;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 public class UserCommand implements Serializable {
 
@@ -39,5 +40,9 @@ public class UserCommand implements Serializable {
     return id;
   }
   
+  public String toString() {
+    String result = Arrays.toString(args).replaceAll("\\s","");
+    return result.substring(1, result.length()-1);
+  }
 
 }
