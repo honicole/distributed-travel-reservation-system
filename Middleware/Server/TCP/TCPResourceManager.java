@@ -29,8 +29,8 @@ public class TCPResourceManager extends ResourceManager {
    * Set this to {@code true} only when performing performance analysis
    */
   private static final boolean LOG_PERFORMANCE = true;
-  private static final String FILENAME = "./log.txt";
-  private static File logFile = new File(FILENAME);
+  private static String FILENAME;
+  private static File logFile = new File(FILENA00ME);
   private static StringBuilder log = new StringBuilder();
   private static int counter = 0;
 
@@ -54,6 +54,9 @@ public class TCPResourceManager extends ResourceManager {
     }
     
     if (LOG_PERFORMANCE) {
+      String timestamp = Long.toString(System.currentTimeMillis());
+      FILENAME = "log-" + timestamp + ".txt";
+      logFile = new File(FILENAME);
       if (!logFile.exists()) {
         try {
           logFile.createNewFile();
