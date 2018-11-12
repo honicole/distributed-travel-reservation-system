@@ -47,7 +47,6 @@ public class PerformanceAnalyzer extends TCPClient {
     if (args.length > 1) {
       s_serverPort = Integer.valueOf(args[1]);
     }
-    
     if (args.length > 3) {
       System.err.println((char) 27 + "[31;1mClient exception: " + (char) 27
           + "[0mUsage: java client.PerformanceAnalyzer [server_hostname [server_port]] option(0-2)(SCSR-SCMR-MCMR)");
@@ -72,7 +71,6 @@ public class PerformanceAnalyzer extends TCPClient {
     PerformanceAnalyzer performanceAnalyzer = null;
     try {
       performanceAnalyzer = new PerformanceAnalyzer(new Socket());
-      System.out.println(Arrays.toString(args));
       option = Integer.parseInt(args[2]);
     } catch (Exception e) {
       e.printStackTrace();
@@ -119,12 +117,30 @@ public class PerformanceAnalyzer extends TCPClient {
           if (option > 0) { // Multiple RMs
             int x = randomNumberBetween(0, 50) - 25; // [-25, 25]
             long transactionDuration = System.currentTimeMillis() - start;
-            if(transactionDuration < 500 + x) {
-              sleep((500 + x) - transactionDuration);
+            
+            // For the 1st 100 transactions, each client should submit once every 5 seconds
+            if(counter < 100) {
+              if(transactionDuration < 5000 + x) {
+                sleep((5000 + x) - transactionDuration);
+              }
+            } 
+            // For the next 100 transactions, each client should submit once every second
+            else if (100 <= counter && counter < 200) {
+              if(transactionDuration < 1000 + x) {
+                sleep((1000 + x) - transactionDuration);
+              }
+            }
+            // For the last 100 transactions, each client should submit once every second
+            else if (200 <= counter && counter < 300) {
+              if(transactionDuration < 1000 + x) {
+                sleep((1000 + x) - transactionDuration);
+              }
             }
           }
         }
         counter++;
+        
+        if (counter == 300) System.exit(0); 
       }
       
     } catch (Exception e) {
