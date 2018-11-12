@@ -57,6 +57,8 @@ public class PerformanceAnalyzer extends TCPClient {
       String timestamp = Long.toString(System.currentTimeMillis());
       FILENAME = "log-" + timestamp + ".txt";
       logFile = new File(FILENAME);
+      
+      System.out.println("Saving log to " + FILENAME);
     }
       
     if (!logFile.exists()) {
