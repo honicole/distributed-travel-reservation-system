@@ -130,10 +130,10 @@ public class PerformanceAnalyzer extends TCPClient {
                 sleep((1000 + x) - transactionDuration);
               }
             }
-            // For the last 100 transactions, each client should submit once every second
+            // For the last 100 transactions, each client should submit twice every second
             else if (200 <= counter && counter < 300) {
-              if(transactionDuration < 1000 + x) {
-                sleep((1000 + x) - transactionDuration);
+              if(transactionDuration < 500 + x) {
+                sleep((500 + x) - transactionDuration);
               }
             }
           }
