@@ -23,7 +23,7 @@ public class PerformanceAnalyzer extends TCPClient {
       {"Single Client-Single RM", "Single Client-Multiple RMs", "Multiple Clients & RMs"};
   private static int option = 0;
   
-  private static final String FILENAME = "./log.txt";
+  private static String FILENAME = "./log.txt";
   private static File logFile = new File(FILENAME);
   private static StringBuilder log = new StringBuilder();
   private static int counter = 0;
@@ -53,12 +53,18 @@ public class PerformanceAnalyzer extends TCPClient {
       System.exit(1);
     }
 
+    if (option == 2) { // multiple clients need separate log files
+      String timestamp = Long.toString(System.currentTimeMillis());
+      FILENAME = "log-" + timestamp + ".txt";
+      logFile = new File(FILENAME);
+    }
+      
     if (!logFile.exists()) {
       try {
         logFile.createNewFile();
       } catch (IOException e) {}
     }
-
+    
     // Write log to disk on Ctrl-C
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       try {
