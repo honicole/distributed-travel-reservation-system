@@ -53,12 +53,10 @@ public class PerformanceAnalyzer extends TCPClient {
       System.exit(1);
     }
 
-    if (option == 2) { // multiple clients need separate log files
+    if (true/*option == 2*/) { // multiple clients need separate log files
       String timestamp = Long.toString(System.currentTimeMillis());
       FILENAME = "log-" + timestamp + ".txt";
       logFile = new File(FILENAME);
-      
-      System.out.println("Saving log to " + FILENAME);
     }
       
     if (!logFile.exists()) {
