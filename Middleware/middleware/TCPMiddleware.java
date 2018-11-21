@@ -10,8 +10,10 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -20,6 +22,9 @@ import java.util.concurrent.Executors;
 
 import Client.Command;
 import Client.UserCommand;
+import Server.LockManager.LockManager;
+import Server.LockManager.TransactionLockObject;
+import Server.Common.RMItem;
 import Server.LockManager.DeadlockException;
 import Server.TCP.TCPResourceManager;
 import exceptions.InvalidTransactionException;
@@ -33,11 +38,14 @@ public class TCPMiddleware extends Middleware {
   private Executor executor = Executors.newFixedThreadPool(8);
   private static MiddlewareListener listener;
   private static TransactionManager TM;
-  
+  private static LockManager lockManager;
+  protected Map<Integer, List<String>> write_list = new HashMap<>();
+  protected Map<Integer, Map<String, RMItem>> pre_image = new HashMap<>();
+
   /**
    * Set this to {@code true} only when performing performance analysis
    */
-  private static final boolean LOG_PERFORMANCE = true;
+  private static final boolean LOG_PERFORMANCE = false;
   private static final String FILENAME = "./log.txt";
   private static File logFile = new File(FILENAME);
   private static StringBuilder log = new StringBuilder();
@@ -51,11 +59,11 @@ public class TCPMiddleware extends Middleware {
     try {
       this.server = new ServerSocket(Integer.valueOf(args[0]), 1, InetAddress.getLocalHost());
     } catch (NumberFormatException | IOException e) {
-      //e.printStackTrace();
+      // e.printStackTrace();
     }
     s_serverHosts = new String[] { args[1], args[3], args[5] };
     s_serverPorts = new int[] { Integer.valueOf(args[2]), Integer.valueOf(args[4]), Integer.valueOf(args[6]) };
-
+    lockManager = new LockManager();
   }
 
   public static void main(String[] args) {
@@ -69,21 +77,23 @@ public class TCPMiddleware extends Middleware {
     if (System.getSecurityManager() == null) {
       System.setSecurityManager(new SecurityManager());
     }
-    
+
     if (LOG_PERFORMANCE) {
       if (!logFile.exists()) {
         try {
           logFile.createNewFile();
-        } catch (IOException e) {}
+        } catch (IOException e) {
+        }
       }
-      
+
       // Write log to disk on Ctrl-C
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         try {
           BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME));
           writer.write(log.toString());
           writer.close();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
       }));
     }
 
@@ -131,7 +141,11 @@ public class TCPMiddleware extends Middleware {
       }, executor);
 
       try {
-        return (Boolean) future.get();
+        boolean isCommitted = (Boolean) future.get();
+        if (isCommitted) {
+          lockManager.UnlockAll(transactionId);
+          return isCommitted;
+        }
       } catch (InterruptedException e) {
         e.printStackTrace();
       } catch (ExecutionException e) {
@@ -146,6 +160,7 @@ public class TCPMiddleware extends Middleware {
         UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
         try {
           sockets_out.get(clientSocket).get(rm).writeObject(req);
+          lockManager.UnlockAll(transactionId);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -206,31 +221,34 @@ public class TCPMiddleware extends Middleware {
                 String server;
                 boolean success = true;
                 switch (cmd.name()) {
+                case "ReserveFlight":
+                  lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
                 case "AddFlight":
                 case "DeleteFlight":
                 case "QueryFlight":
                 case "QueryFlightPrice":
-                case "ReserveFlight":
                   server = s_serverHosts[0];
                   TM.addResourceManager(transactionId, server);
                   sockets_out.get(clientSocket).get(server).writeObject(req);
                   result = sockets_in.get(clientSocket).get(server).readObject();
                   break;
+                case "ReserveCar":
+                  lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
                 case "AddCars":
                 case "DeleteCars":
                 case "QueryCars":
                 case "QueryCarsPrice":
-                case "ReserveCar":
                   server = s_serverHosts[1];
                   TM.addResourceManager(transactionId, server);
                   sockets_out.get(clientSocket).get(server).writeObject(req);
                   result = sockets_in.get(clientSocket).get(server).readObject();
                   break;
+                case "ReserveRoom":
+                  lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
                 case "AddRooms":
                 case "DeleteRooms":
                 case "QueryRooms":
                 case "QueryRoomsPrice":
-                case "ReserveRoom":
                   server = s_serverHosts[2];
                   TM.addResourceManager(transactionId, server);
                   sockets_out.get(clientSocket).get(server).writeObject(req);
@@ -247,6 +265,7 @@ public class TCPMiddleware extends Middleware {
                       // If first server, generate customer ID and repackage for subsequent servers
                       sockets_out.get(clientSocket).get(server).writeObject(req);
                       id = (int) sockets_in.get(clientSocket).get(server).readObject();
+                      lockManager.Lock(transactionId, Integer.toString(id), TransactionLockObject.LockType.LOCK_WRITE);
                       args_with_id = Arrays.copyOf(args, args.length + 1);
                       args_with_id[args_with_id.length - 1] = Integer.toString(id);
                       req_with_id = new UserCommand(Command.fromString("AddCustomerID"), args_with_id);
@@ -258,9 +277,9 @@ public class TCPMiddleware extends Middleware {
                   result = success ? id : -1;
                   break;
                 case "AddCustomerID":
-                case "DeleteCustomerID":
+                case "DeleteCustomer":
+                  lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
                   for (String s : s_serverHosts) {
-                    // TODO: IDENTIFY WITH HOST AND PORT!!!!!!!!!
                     TM.addResourceManager(transactionId, s);
                     sockets_out.get(clientSocket).get(s).writeObject(req);
                     success &= (Boolean) sockets_in.get(clientSocket).get(s).readObject();
@@ -268,6 +287,7 @@ public class TCPMiddleware extends Middleware {
                   result = success;
                   break;
                 case "QueryCustomer":
+                  lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_READ);
                   String customer_bill = "";
                   String regex = "^Bill for customer [0-9]*\n";
                   for (int i = 0; i < s_serverHosts.length; i++) {
@@ -285,12 +305,13 @@ public class TCPMiddleware extends Middleware {
                   break;
                 case "Bundle":
                   // TODO: check that all are available before reserving
-                  
+
                   /**
                    * try to get all the locks on RM level, eg flight id
                    * 
                    * if false: abort, then release
                    */
+                  lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
                   String xid = req.get(1);
                   String cid = req.get(2);
                   String location = req.get(args.length - 3);
@@ -335,10 +356,12 @@ public class TCPMiddleware extends Middleware {
                   result = TM.abort(clientSocket, transactionId);
                   break;
                 }
-                
+
                 if (LOG_PERFORMANCE) {
                   log.append(counter + "," + req.get(0) + "," + (System.currentTimeMillis() - start) + "\n");
                 }
+              } catch (DeadlockException e) {
+                  result = e;
               } catch (Exception e) {
                 e.printStackTrace();
               }

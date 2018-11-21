@@ -87,7 +87,6 @@ public class TransactionManager {
     setStatus(transactionId, Status.ABORTING);
     Trace.info("TM::abort(" + transactionId + ") Transaction aborting");
 
-    // should check first if everything can be aborted?
     for (String rm : transaction.resourceManagersList) {
       this.middleware.abort(socket, transactionId, rm);
     }

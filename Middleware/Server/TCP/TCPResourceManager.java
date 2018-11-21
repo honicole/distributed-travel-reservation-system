@@ -28,7 +28,7 @@ public class TCPResourceManager extends ResourceManager {
   /**
    * Set this to {@code true} only when performing performance analysis
    */
-  private static final boolean LOG_PERFORMANCE = true;
+  private static final boolean LOG_PERFORMANCE = false;
   private static String FILENAME;
   private static File logFile;
   private static StringBuilder log = new StringBuilder();
@@ -166,7 +166,7 @@ public class TCPResourceManager extends ResourceManager {
                 case "AddCustomerID":
                   oos.writeObject(new Boolean(newCustomer(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
                   break;
-                case "DeleteCustomerID":
+                case "DeleteCustomer":
                   oos.writeObject(new Boolean(deleteCustomer(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
                   break;
                 case "QueryCustomer":
