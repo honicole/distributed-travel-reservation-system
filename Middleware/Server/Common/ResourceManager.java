@@ -14,10 +14,8 @@ import Server.LockManager.TransactionLockObject;
 import exceptions.InvalidTransactionException;
 import exceptions.TransactionAbortedException;
 import Server.Common.RMHashMap;
-import Server.Common.ShadowPage;
 
 import java.rmi.RemoteException;
-import java.io.*;
 
 public class ResourceManager implements IResourceManager {
   protected String m_name = "";
@@ -25,8 +23,12 @@ public class ResourceManager implements IResourceManager {
   protected LockManager lockManager;
   protected Map<Integer, List<String>> write_list = new HashMap<>();
   protected Map<Integer, Map<String, RMItem>> pre_image = new HashMap<>();
-  protected ShadowPage<RMHashMap> data_file;
-  protected ShadowPage<Map<Integer, Map<String, RMItem>>> in_progress;
+  protected Map<Integer, RMHashMap> local_copies = new HashMap<>();
+
+  protected ShadowPage<RMHashMap> file_A;
+  protected ShadowPage<RMHashMap> file_B;
+  protected ShadowPage<MasterRecord> master_record_file;
+  protected MasterRecord master_record = new MasterRecord();
 
   public ResourceManager() {
     lockManager = new LockManager();
@@ -35,14 +37,24 @@ public class ResourceManager implements IResourceManager {
   public ResourceManager(String rm) {
     m_name = rm;
     lockManager = new LockManager();
-    data_file = new ShadowPage<>(rm, "committed");
-    in_progress = new ShadowPage<>(rm, "in_progress");
-    RMHashMap load_from_file = data_file.load();
-    if (load_from_file != null) m_data = load_from_file;
+
+    file_A = new ShadowPage<>(rm, "A");
+    file_B = new ShadowPage<>(rm, "B");
+    master_record_file = new ShadowPage<>(rm, "master_record");
+    initializeFiles();
   }
 
   // Reads a data item
   protected RMItem readData(int xid, String key) {
+    if (local_copies.get(xid) != null) {
+      synchronized (local_copies.get(xid)) {
+        RMItem item = local_copies.get(xid).get(key);
+        if (item != null) {
+          return (RMItem) item.clone();
+        }
+        return null;
+      }
+    }
     synchronized (m_data) {
       RMItem item = m_data.get(key);
       if (item != null) {
@@ -54,15 +66,25 @@ public class ResourceManager implements IResourceManager {
 
   // Writes a data item
   protected void writeData(int xid, String key, RMItem value) {
-    synchronized (m_data) {
-      m_data.put(key, value);
+    if (local_copies.get(xid) == null) {
+      synchronized (m_data) {
+        local_copies.put(xid, (RMHashMap) m_data.clone());
+      }
+    }
+    synchronized (local_copies.get(xid)) {
+      local_copies.get(xid).put(key, value);
     }
   }
 
   // Remove the item out of storage
   protected void removeData(int xid, String key) {
-    synchronized (m_data) {
-      m_data.remove(key);
+    if (local_copies.get(xid) == null) {
+      synchronized (m_data) {
+        local_copies.put(xid, (RMHashMap) m_data.clone());
+      }
+    }
+    synchronized (local_copies.get(xid)) {
+      local_copies.get(xid).remove(key);
     }
   }
 
@@ -401,8 +423,19 @@ public class ResourceManager implements IResourceManager {
     if (pre_image.get(transactionId) != null) {
       pre_image.get(transactionId).clear();
     }
-    
-    data_file.save(m_data);
+
+    synchronized(m_data) {
+      m_data = (RMHashMap) local_copies.get(transactionId).clone();
+      if (master_record.getPointer() == file_A) {
+        file_B.save(m_data);
+        master_record.setPointer(file_B);
+      } else {
+        file_A.save(m_data);
+        master_record.setPointer(file_A);
+      }
+      master_record.setId(transactionId);
+      master_record_file.save(master_record);
+    }
 
     if (lockManager.UnlockAll(transactionId)) {
       Trace.info("RM::commit(" + transactionId + ") succeeded");
@@ -468,5 +501,26 @@ public class ResourceManager implements IResourceManager {
       return;
     map.put(key, (RMItem) item == null ? null : (RMItem) item.clone());
     pre_image.put(xid, map);
+  }
+
+  private void initializeFiles() {
+    MasterRecord load_master_from_file = master_record_file.load();
+
+    if (load_master_from_file != null) {
+      master_record = load_master_from_file;
+      RMHashMap load_from_file = master_record.getPointer().load();
+
+      if (load_from_file != null) {
+        m_data = load_from_file;
+      } else {
+        file_A.save(m_data);
+        file_B.save(m_data);
+      }
+    } else {
+      master_record.setPointer(file_A);
+      master_record_file.save(master_record);
+      file_A.save(m_data);
+      file_B.save(m_data);
+    }
   }
 }
