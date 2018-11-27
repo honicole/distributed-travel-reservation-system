@@ -24,7 +24,7 @@ public class TCPResourceManager extends ResourceManager {
 
   private Executor executor = Executors.newFixedThreadPool(8);
   private ResourceManagerListener listener;
-  
+
   /**
    * Set this to {@code true} only when performing performance analysis
    */
@@ -52,7 +52,7 @@ public class TCPResourceManager extends ResourceManager {
     if (System.getSecurityManager() == null) {
       System.setSecurityManager(new SecurityManager());
     }
-    
+
     if (LOG_PERFORMANCE) {
       String timestamp = Long.toString(System.currentTimeMillis());
       FILENAME = "log-" + timestamp + ".txt";
@@ -60,20 +60,22 @@ public class TCPResourceManager extends ResourceManager {
       if (!logFile.exists()) {
         try {
           logFile.createNewFile();
-        } catch (IOException e) {}
+        } catch (IOException e) {
+        }
       }
-      
+
       // Write log to disk on Ctrl-C
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         try {
           BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME));
           writer.write(log.toString());
           writer.close();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
       }));
     }
 
-    TCPResourceManager rm = new TCPResourceManager();
+    TCPResourceManager rm = new TCPResourceManager(args[0]);
     rm.setListener(rm.new ResourceManagerListenerImpl());
 
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
@@ -99,7 +101,7 @@ public class TCPResourceManager extends ResourceManager {
         try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
           System.out.println("Connected");
-          
+
           final UserCommand[] fromClient = new UserCommand[1];
           while ((fromClient[0] = (UserCommand) ois.readObject()) != null) {
             long start = System.currentTimeMillis();
@@ -182,11 +184,11 @@ public class TCPResourceManager extends ResourceManager {
                   shutdown();
                   break;
                 }
-                
+
                 if (LOG_PERFORMANCE) {
                   log.append(counter + "," + args[1] + "," + (System.currentTimeMillis() - start) + "\n");
                 }
-                
+
                 return true;
               } catch (DeadlockException e) {
                 try {
@@ -195,13 +197,13 @@ public class TCPResourceManager extends ResourceManager {
                   e1.printStackTrace();
                 }
                 e.printStackTrace();
-                
+
                 if (LOG_PERFORMANCE) {
                   log.append(counter + ",L," + (System.currentTimeMillis() - start) + "\n");
                 }
               } catch (Exception e) {
                 e.printStackTrace();
-                
+
                 if (LOG_PERFORMANCE) {
                   log.append(counter + ",F," + (System.currentTimeMillis() - start) + "\n");
                 }

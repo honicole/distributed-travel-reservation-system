@@ -10,7 +10,6 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +29,6 @@ import Server.TCP.TCPResourceManager;
 import exceptions.InvalidTransactionException;
 
 public class TCPMiddleware extends Middleware {
-
   private ServerSocket server;
   private static int s_serverPort = 1099;
   private static String[] s_serverHosts;

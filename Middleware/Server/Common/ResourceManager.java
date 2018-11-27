@@ -14,6 +14,7 @@ import Server.LockManager.TransactionLockObject;
 import exceptions.InvalidTransactionException;
 import exceptions.TransactionAbortedException;
 import Server.Common.RMHashMap;
+import Server.Common.ShadowPage;
 
 import java.rmi.RemoteException;
 import java.io.*;
@@ -24,14 +25,20 @@ public class ResourceManager implements IResourceManager {
   protected LockManager lockManager;
   protected Map<Integer, List<String>> write_list = new HashMap<>();
   protected Map<Integer, Map<String, RMItem>> pre_image = new HashMap<>();
+  protected ShadowPage<RMHashMap> data_file;
+  protected ShadowPage<Map<Integer, Map<String, RMItem>>> in_progress;
 
   public ResourceManager() {
     lockManager = new LockManager();
   }
 
-  public ResourceManager(String p_name) {
-    m_name = p_name;
+  public ResourceManager(String rm) {
+    m_name = rm;
     lockManager = new LockManager();
+    data_file = new ShadowPage<>(rm, "committed");
+    in_progress = new ShadowPage<>(rm, "in_progress");
+    RMHashMap load_from_file = data_file.load();
+    if (load_from_file != null) m_data = load_from_file;
   }
 
   // Reads a data item
@@ -135,7 +142,7 @@ public class ResourceManager implements IResourceManager {
       addToPreImage(xid, customer.getKey(), customer);
       customer.reserve(key, location, item.getPrice());
       writeData(xid, customer.getKey(), customer);
-      
+
       addToWriteList(xid, item.getKey());
       addToPreImage(xid, item.getKey(), item);
       // Decrease the number of available items in the storage
@@ -394,6 +401,8 @@ public class ResourceManager implements IResourceManager {
     if (pre_image.get(transactionId) != null) {
       pre_image.get(transactionId).clear();
     }
+    
+    data_file.save(m_data);
 
     if (lockManager.UnlockAll(transactionId)) {
       Trace.info("RM::commit(" + transactionId + ") succeeded");
