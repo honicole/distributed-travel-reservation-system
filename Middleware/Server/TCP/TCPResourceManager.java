@@ -34,15 +34,6 @@ public class TCPResourceManager extends ResourceManager {
   private static StringBuilder log = new StringBuilder();
   private static int counter = 0;
 
-  /**
-   * Set this to {@code true} only when performing performance analysis
-   */
-  private static final boolean LOG_PERFORMANCE = false;
-  private static String FILENAME;
-  private static File logFile;
-  private static StringBuilder log = new StringBuilder();
-  private static int counter = 0;
-
   private TCPResourceManager() {
   }
 

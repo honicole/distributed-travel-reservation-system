@@ -49,15 +49,6 @@ public class TCPMiddleware extends Middleware {
   protected Map<Integer, List<String>> write_list = new HashMap<>();
   protected Map<Integer, Map<String, RMItem>> pre_image = new HashMap<>();
 
-  /**
-   * Set this to {@code true} only when performing performance analysis
-   */
-  private static final boolean LOG_PERFORMANCE = false;
-  private static final String FILENAME = "./log.txt";
-  private static File logFile = new File(FILENAME);
-  private static StringBuilder log = new StringBuilder();
-  private static int counter = 0;
-
   private TCPMiddleware() {
   }
 
