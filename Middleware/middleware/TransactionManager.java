@@ -28,16 +28,18 @@ public class TransactionManager {
   }
 
   public enum Status {
-    ACTIVE, COMMITTING, COMMITTED, ABORTING, ABORTED, TIME_OUT, INVALID
+    ACTIVE, PREPARING_COMMIT, COMMITTED, ABORTED, TIME_OUT, INVALID
   }
 
   private static class Transaction implements Serializable {
     private static final long serialVersionUID = 3089530352465349341L;
     private HashSet<String> resourceManagersList;
+    private HashSet<String> prepareToCommitList;
     private Status status;
 
     Transaction() {
       this.resourceManagersList = new HashSet<>();
+      this.prepareToCommitList = new HashSet<>();
       this.status = Status.ACTIVE;
     }
   }
@@ -48,6 +50,30 @@ public class TransactionManager {
     return xid;
   }
 
+  public boolean prepare(Socket socket, int transactionId)
+      throws RemoteException, TransactionAbortedException, InvalidTransactionException {
+    Transaction transaction = transactions.get(transactionId);
+
+    setStatus(transactionId, Status.PREPARING_COMMIT);
+    Trace.info("TM::prepare(" + transactionId + ") Transaction is preparing to commit");
+
+    boolean prepare_to_commit = true;
+    for (String rm : transaction.resourceManagersList) {
+      boolean vote = this.middleware.prepare(socket, transactionId, rm);
+      if (vote) {
+        addPrepareToCommit(transactionId, rm);
+      }
+      prepare_to_commit &= vote;
+    }
+
+    if (prepare_to_commit) {
+      return commit(socket, transactionId);
+    }
+
+    abort(socket, transactionId);
+    return false;
+  }
+
   public boolean commit(Socket socket, int transactionId)
       throws RemoteException, TransactionAbortedException, InvalidTransactionException {
     Transaction transaction = transactions.get(transactionId);
@@ -56,19 +82,15 @@ public class TransactionManager {
       throw new InvalidTransactionException("The transaction does not exist");
     }
 
-    if (transaction.status != Status.ACTIVE) {
+    if (transaction.status != Status.ACTIVE && transaction.status != Status.PREPARING_COMMIT) {
       throw new InvalidTransactionException("Cannot commit the transaction.");
     }
 
-    setStatus(transactionId, Status.COMMITTING);
-    Trace.info("TM::commit(" + transactionId + ") Transaction committing");
-
-    // should check first if everything can be committed?
+    setStatus(transactionId, Status.COMMITTED);
     for (String rm : transaction.resourceManagersList) {
       this.middleware.commit(socket, transactionId, rm);
     }
 
-    setStatus(transactionId, Status.COMMITTED);
     Trace.info("TM::commit(" + transactionId + ") Transaction committed");
     return true;
   }
@@ -80,18 +102,19 @@ public class TransactionManager {
       throw new InvalidTransactionException("The transaction does not exist");
     }
 
-    if (transaction.status != Status.ACTIVE) {
+    if (transaction.status != Status.ACTIVE && transaction.status != Status.PREPARING_COMMIT) {
       throw new InvalidTransactionException("Cannot abort the transaction.");
     }
 
-    setStatus(transactionId, Status.ABORTING);
-    Trace.info("TM::abort(" + transactionId + ") Transaction aborting");
-
-    for (String rm : transaction.resourceManagersList) {
+    setStatus(transactionId, Status.ABORTED);
+    HashSet<String> abortList = transaction.resourceManagersList;
+    if (!transaction.prepareToCommitList.isEmpty()) {
+      abortList = transaction.prepareToCommitList;
+    }
+    for (String rm : abortList) {
       this.middleware.abort(socket, transactionId, rm);
     }
 
-    setStatus(transactionId, Status.ABORTED);
     Trace.info("TM::abort(" + transactionId + ") Transaction aborted");
     return true;
   }
@@ -126,6 +149,14 @@ public class TransactionManager {
     }
   }
 
+  public void addPrepareToCommit(int id, String resourceManager) throws RemoteException {
+    Transaction transaction = transactions.get(id);
+    if (!transaction.prepareToCommitList.contains(resourceManager)) {
+      transaction.prepareToCommitList.add(resourceManager);
+      Trace.info("TM::addPrepareToCommit(" + id + ", " + resourceManager + ") Resource manager voted YES");
+    }
+  }
+
   public void resetTimeToLive(Socket socket, int id) {
     if (transactions.containsKey(id)) {
       if (time_to_live.containsKey(id)) {
@@ -153,5 +184,14 @@ public class TransactionManager {
       }, TIMEOUT);
       time_to_live.put(id, timer);
     }
+  }
+
+  public void resetCrashes() throws RemoteException {
+  }
+
+  public void crashMiddleware(int mode) throws RemoteException {
+  }
+
+  public void crashResourceManager(String name /* RM Name */, int mode) throws RemoteException {
   }
 }

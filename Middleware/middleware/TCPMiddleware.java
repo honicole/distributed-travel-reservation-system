@@ -62,7 +62,6 @@ public class TCPMiddleware extends Middleware {
   }
 
   public TCPMiddleware(String[] args) throws Exception {
-    super(new TCPResourceManager(args[2]), new TCPResourceManager(args[4]), new TCPResourceManager(args[6]));
     try {
       this.server = new ServerSocket(Integer.valueOf(args[0]), 1, InetAddress.getLocalHost());
     } catch (NumberFormatException | IOException e) {
@@ -150,6 +149,36 @@ public class TCPMiddleware extends Middleware {
     private Map<Socket, Map<String, ObjectOutputStream>> sockets_out = new HashMap<>();
     private Map<Socket, Map<String, ObjectInputStream>> sockets_in = new HashMap<>();
 
+    public boolean prepare(Socket clientSocket, int transactionId, String rm) {
+      boolean prepare_to_commit = true;
+
+      for (int i = 0; i < 5; i++) {
+        CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+          Object result = null;
+          String[] cmd_args = new String[] { "prepare", Integer.toString(transactionId) };
+          UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
+          try {
+            sockets_out.get(clientSocket).get(rm).writeObject(req);
+            result = sockets_in.get(clientSocket).get(rm).readObject();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+          return result;
+        }, executor);
+
+        try {
+          prepare_to_commit &= (Boolean) future.get();
+        } catch (InterruptedException | ExecutionException e) {
+          e.printStackTrace();
+        }
+        
+        if (!prepare_to_commit)
+          break;
+      }
+      
+      return prepare_to_commit;
+    }
+
     public boolean commit(Socket clientSocket, int transactionId, String rm) {
       CompletableFuture future = CompletableFuture.supplyAsync(() -> {
         Object result = null;
@@ -170,9 +199,7 @@ public class TCPMiddleware extends Middleware {
           lockManager.UnlockAll(transactionId);
           return isCommitted;
         }
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      } catch (ExecutionException e) {
+      } catch (InterruptedException | ExecutionException e) {
         e.printStackTrace();
       }
       return false;
@@ -374,8 +401,9 @@ public class TCPMiddleware extends Middleware {
                 case "start":
                   result = (int) TM.start();
                   break;
+                case "prepare":
                 case "commit":
-                  result = TM.commit(clientSocket, transactionId);
+                  result = TM.prepare(clientSocket, transactionId);
                   break;
                 case "abort":
                   result = TM.abort(clientSocket, transactionId);
@@ -386,7 +414,7 @@ public class TCPMiddleware extends Middleware {
                   log.append(counter + "," + req.get(0) + "," + (System.currentTimeMillis() - start) + "\n");
                 }
               } catch (DeadlockException e) {
-                  result = e;
+                result = e;
               } catch (Exception e) {
                 e.printStackTrace();
               }
