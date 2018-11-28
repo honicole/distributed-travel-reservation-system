@@ -23,7 +23,7 @@ public class TCPClient extends Client {
   private Socket serverSocket;
   protected ObjectOutputStream oos;
   protected ObjectInputStream ois;
-  
+
   protected int xid; // for use by performance analysis
 
   private TCPClient() {
@@ -887,6 +887,93 @@ public class TCPClient extends Client {
       }
       break;
     }
+    case crashMiddleware: {
+      checkArgumentsCount(2, arguments.size());
+
+      System.out.println("Enabling crash mode [mode=" + arguments.elementAt(1) + "]");
+
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        Object result = future.get();
+        if ((boolean) result) {
+          System.out.println("Crash mode enabled");
+        } else {
+          System.out.println("Crash mode could not be enabled");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      break;
+    }
+    case crashResourceManager: {
+      checkArgumentsCount(3, arguments.size());
+
+      System.out.println("Enabling crash mode [mode=" + arguments.elementAt(2) + "] at resource manager [rm=" + arguments.elementAt(1) + "]");
+
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        Object result = future.get();
+        if ((boolean) result) {
+          System.out.println("Crash mode enabled");
+        } else {
+          System.out.println("Crash mode could not be enabled");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      break;
+    }
+    case resetCrashes: {
+      checkArgumentsCount(1, arguments.size());
+
+      System.out.println("Resetting all crash modes");
+
+      final String[] args = arguments.toArray(new String[arguments.size()]);
+      final UserCommand packagedCommand = new UserCommand(cmd, args);
+      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        try {
+          oos.writeObject(packagedCommand);
+          return ois.readObject();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        return false;
+      }, executor);
+
+      try {
+        Object result = future.get();
+        if ((boolean) result) {
+          System.out.println("Crash modes disabled");
+        } else {
+          System.out.println("Crash mode could not be disabled");
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      break;
+    }
     case Quit:
       checkArgumentsCount(1, arguments.size());
 
@@ -894,7 +981,7 @@ public class TCPClient extends Client {
       System.exit(0);
     }
   }
-  
+
   public void execute(UserCommand uc) throws NumberFormatException, RemoteException {
     execute(uc.getCommand(), new Vector<String>(Arrays.asList(uc.getArgs())));
   }

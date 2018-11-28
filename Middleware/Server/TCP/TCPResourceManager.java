@@ -34,9 +34,6 @@ public class TCPResourceManager extends ResourceManager {
   private static StringBuilder log = new StringBuilder();
   private static int counter = 0;
 
-  private TCPResourceManager() {
-  }
-
   public TCPResourceManager(String name) {
     super(name);
   }

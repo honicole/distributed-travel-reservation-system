@@ -390,7 +390,7 @@ public class ResourceManager implements IResourceManager {
   }
   
   public boolean prepare(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException, DeadlockException {
-    if (!write_list.containsKey(xid)) {
+    if (!write_list.get(xid).isEmpty()) {
       Trace.info("RM::prepare(" + xid + ") voted NO");
       abort(xid);
       return false;
@@ -399,7 +399,6 @@ public class ResourceManager implements IResourceManager {
     Trace.info("RM::prepare(" + xid + ") voted YES");
     return true;
   }
-
 
   @Override
   public boolean commit(int transactionId)

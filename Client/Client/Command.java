@@ -34,6 +34,10 @@ public enum Command {
   commit("Commit a transaction", "<xid>"),
   abort("Abort a transaction", "<xid>"),
   prepare("Prepare and commit a transaction", "<xid>"),
+  
+  crashMiddleware("Enable a crash mode", "<mode>"),
+  crashResourceManager("Enable a crash mode for a resource manager", "<ResourceManager>,<mode>"),
+  resetCrashes("Reset all crashes", null),
 
   Quit("Exit the client application", "");
 
@@ -63,7 +67,6 @@ public enum Command {
   }
 
   public String toString() {
-    if (m_args != null) return name();
     String ret = name() + ": " + m_description + "\n";
     ret += "Usage: " + name() + "," + m_args;
     return ret;
