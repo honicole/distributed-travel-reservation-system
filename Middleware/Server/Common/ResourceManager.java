@@ -16,32 +16,45 @@ import exceptions.TransactionAbortedException;
 import Server.Common.RMHashMap;
 
 import java.rmi.RemoteException;
-import java.io.*;
 
 public class ResourceManager implements IResourceManager {
   protected String m_name = "";
   protected RMHashMap m_data = new RMHashMap();
   protected LockManager lockManager;
   protected Map<Integer, List<String>> write_list = new HashMap<>();
-  
-  /**
-   * Preserves the state of previously committed transactions.
-   * 
-   * Maps each transaction id to a map, which in turn maps keys to resource manager items
-   */
   protected Map<Integer, Map<String, RMItem>> pre_image = new HashMap<>();
+  protected Map<Integer, RMHashMap> local_copies = new HashMap<>();
+
+  protected ShadowPage<RMHashMap> file_A;
+  protected ShadowPage<RMHashMap> file_B;
+  protected ShadowPage<MasterRecord> master_record_file;
+  protected MasterRecord master_record = new MasterRecord();
 
   public ResourceManager() {
     lockManager = new LockManager();
   }
 
-  public ResourceManager(String p_name) {
-    m_name = p_name;
+  public ResourceManager(String rm) {
+    m_name = rm;
     lockManager = new LockManager();
+
+    file_A = new ShadowPage<>(rm, "A");
+    file_B = new ShadowPage<>(rm, "B");
+    master_record_file = new ShadowPage<>(rm, "master_record");
+    initializeFiles();
   }
 
   // Reads a data item
   protected RMItem readData(int xid, String key) {
+    if (local_copies.get(xid) != null) {
+      synchronized (local_copies.get(xid)) {
+        RMItem item = local_copies.get(xid).get(key);
+        if (item != null) {
+          return (RMItem) item.clone();
+        }
+        return null;
+      }
+    }
     synchronized (m_data) {
       RMItem item = m_data.get(key);
       if (item != null) {
@@ -53,15 +66,25 @@ public class ResourceManager implements IResourceManager {
 
   // Writes a data item
   protected void writeData(int xid, String key, RMItem value) {
-    synchronized (m_data) {
-      m_data.put(key, value);
+    if (local_copies.get(xid) == null) {
+      synchronized (m_data) {
+        local_copies.put(xid, (RMHashMap) m_data.clone());
+      }
+    }
+    synchronized (local_copies.get(xid)) {
+      local_copies.get(xid).put(key, value);
     }
   }
 
   // Remove the item out of storage
   protected void removeData(int xid, String key) {
-    synchronized (m_data) {
-      m_data.remove(key);
+    if (local_copies.get(xid) == null) {
+      synchronized (m_data) {
+        local_copies.put(xid, (RMHashMap) m_data.clone());
+      }
+    }
+    synchronized (local_copies.get(xid)) {
+      local_copies.get(xid).remove(key);
     }
   }
 
@@ -76,6 +99,8 @@ public class ResourceManager implements IResourceManager {
       return false;
     } else {
       if (curObj.getReserved() == 0) {
+        addToWriteList(xid, curObj.getKey());
+        addToPreImage(xid, curObj.getKey(), curObj);
         removeData(xid, curObj.getKey());
         Trace.info("RM::deleteItem(" + xid + ", " + key + ") item deleted");
         return true;
@@ -116,7 +141,6 @@ public class ResourceManager implements IResourceManager {
   // Reserve an item
   protected boolean reserveItem(int xid, int customerID, String key, String location) throws DeadlockException {
     Trace.info("RM::reserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called");
-    lockManager.Lock(xid, Integer.toString(customerID), TransactionLockObject.LockType.LOCK_READ);
     lockManager.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
     Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
@@ -136,9 +160,13 @@ public class ResourceManager implements IResourceManager {
           "RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--No more items");
       return false;
     } else {
+      addToWriteList(xid, customer.getKey());
+      addToPreImage(xid, customer.getKey(), customer);
       customer.reserve(key, location, item.getPrice());
       writeData(xid, customer.getKey(), customer);
 
+      addToWriteList(xid, item.getKey());
+      addToPreImage(xid, item.getKey(), item);
       // Decrease the number of available items in the storage
       item.setCount(item.getCount() - 1);
       item.setReserved(item.getReserved() + 1);
@@ -154,33 +182,19 @@ public class ResourceManager implements IResourceManager {
   public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice)
       throws RemoteException, DeadlockException {
     Trace.info("RM::addFlight(" + xid + ", " + flightNum + ", " + flightSeats + ", $" + flightPrice + ") called");
-    lockManager.Lock(xid, Integer.toString(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
+    lockManager.Lock(xid, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
     Flight curObj = (Flight) readData(xid, Flight.getKey(flightNum));
 
-    if (curObj == null) { // not in database
-      // Doesn't exist yet, add it
+    if (curObj == null) {
       Flight newObj = new Flight(flightNum, flightSeats, flightPrice);
-      
-      // if flight not in pre_image
-//      Map a = pre_image.get(xid);
-//      if (!a.containsKey(Flight.getKey(flightNum))) { // NullPointerException
-//        // set "previous" flight to null so that if the transaction aborts, the flight will still have a value
-//        pre_image.get(xid).put(Flight.getKey(flightNum), null);
-//      }
-      
       addToWriteList(xid, newObj.getKey());
+      addToPreImage(xid, newObj.getKey(), null);
       writeData(xid, newObj.getKey(), newObj);
       Trace.info("RM::addFlight(" + xid + ") created new flight " + flightNum + ", seats=" + flightSeats + ", price=$"
           + flightPrice);
-    } else { // in database
+    } else {
       addToWriteList(xid, curObj.getKey());
-      
-      // if flight not in pre_image
-      //if (!pre_image.get(xid).containsKey(Flight.getKey(flightNum))) {
-        addToPreImage(xid, curObj.getKey(), curObj);
-      //}
-      
-      // Add seats to existing flight and update the price if greater than zero
+      addToPreImage(xid, curObj.getKey(), curObj);
       curObj.setCount(curObj.getCount() + flightSeats);
       if (flightPrice > 0) {
         curObj.setPrice(flightPrice);
@@ -196,30 +210,20 @@ public class ResourceManager implements IResourceManager {
   // NOTE: if price <= 0 and the location already exists, it maintains its current price
   public boolean addCars(int xid, String location, int count, int price) throws RemoteException, DeadlockException {
     Trace.info("RM::addCars(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
-    lockManager.Lock(xid, location, TransactionLockObject.LockType.LOCK_WRITE);
+    lockManager.Lock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
     Car curObj = (Car) readData(xid, Car.getKey(location));
     if (curObj == null) {
       // Car location doesn't exist yet, add it
       Car newObj = new Car(location, count, price);
-      
-      // if flight not in pre_image
-//      if (!pre_image.get(xid).containsKey(Car.getKey(location))) {
-//        pre_image.get(xid).put(Car.getKey(location), null);
-//      }
-      
       addToWriteList(xid, newObj.getKey());
+      addToPreImage(xid, newObj.getKey(), null);
       Trace.info("RM::ADD TO WRITE LIST XID = " + xid + " KEY = " + newObj.getKey());
       writeData(xid, newObj.getKey(), newObj);
       Trace
           .info("RM::addCars(" + xid + ") created new location " + location + ", count=" + count + ", price=$" + price);
     } else {
       addToWriteList(xid, curObj.getKey());
-      
-      // if car not in pre_image
-      //if (!pre_image.get(xid).containsKey(Car.getKey(location))) {
-        addToPreImage(xid, curObj.getKey(), curObj);
-      //}
-      
+      addToPreImage(xid, curObj.getKey(), curObj);
       Trace.info("RM::ADD TO PRE IMAGE XID = " + xid + " KEY = " + curObj.getKey() + " OBJ = " + curObj);
       // Add count to existing car location and update price if greater than zero
       curObj.setCount(curObj.getCount() + count);
@@ -238,30 +242,19 @@ public class ResourceManager implements IResourceManager {
   // NOTE: if price <= 0 and the room location already exists, it maintains its current price
   public boolean addRooms(int xid, String location, int count, int price) throws RemoteException, DeadlockException {
     Trace.info("RM::addRooms(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
-    lockManager.Lock(xid, location, TransactionLockObject.LockType.LOCK_WRITE);
+    lockManager.Lock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
     Room curObj = (Room) readData(xid, Room.getKey(location));
     if (curObj == null) {
       // Room location doesn't exist yet, add it
       Room newObj = new Room(location, count, price);
-      
-      // if room not in pre_image
-//      if (!pre_image.get(xid).containsKey(Room.getKey(location))) {
-//        pre_image.get(xid).put(Room.getKey(location), null);
-//      }
-      
       addToWriteList(xid, newObj.getKey());
+      addToPreImage(xid, newObj.getKey(), null);
       writeData(xid, newObj.getKey(), newObj);
       Trace.info(
           "RM::addRooms(" + xid + ") created new room location " + location + ", count=" + count + ", price=$" + price);
     } else {
       addToWriteList(xid, curObj.getKey());
-      
-      // if room not in pre_image
-      //if (!pre_image.get(xid).containsKey(Room.getKey(location))) {
-        addToPreImage(xid, curObj.getKey(), curObj);
-      //}
-      
-      // Add count to existing object and update price if greater than zero
+      addToPreImage(xid, curObj.getKey(), curObj);
       curObj.setCount(curObj.getCount() + count);
       if (price > 0) {
         curObj.setPrice(price);
@@ -320,7 +313,6 @@ public class ResourceManager implements IResourceManager {
 
   public String queryCustomerInfo(int xid, int customerID) throws RemoteException, DeadlockException {
     Trace.info("RM::queryCustomerInfo(" + xid + ", " + customerID + ") called");
-    lockManager.Lock(xid, Integer.toString(customerID), TransactionLockObject.LockType.LOCK_READ);
     Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       Trace.warn("RM::queryCustomerInfo(" + xid + ", " + customerID + ") failed--customer doesn't exist");
@@ -339,8 +331,8 @@ public class ResourceManager implements IResourceManager {
     int cid = Integer.parseInt(String.valueOf(xid) + String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND))
         + String.valueOf(Math.round(Math.random() * 100 + 1)));
     Customer customer = new Customer(cid);
-    lockManager.Lock(xid, Integer.toString(cid), TransactionLockObject.LockType.LOCK_WRITE);
     addToWriteList(xid, customer.getKey());
+    addToPreImage(xid, customer.getKey(), null);
     writeData(xid, customer.getKey(), customer);
     Trace.info("RM::newCustomer(" + cid + ") returns ID=" + cid);
     return cid;
@@ -351,8 +343,8 @@ public class ResourceManager implements IResourceManager {
     Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       customer = new Customer(customerID);
-      lockManager.Lock(xid, Integer.toString(customerID), TransactionLockObject.LockType.LOCK_WRITE);
       addToWriteList(xid, customer.getKey());
+      addToPreImage(xid, customer.getKey(), null);
       writeData(xid, customer.getKey(), customer);
       Trace.info("RM::newCustomer(" + xid + ", " + customerID + ") created a new customer");
       return true;
@@ -364,7 +356,6 @@ public class ResourceManager implements IResourceManager {
 
   public boolean deleteCustomer(int xid, int customerID) throws RemoteException, DeadlockException {
     Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") called");
-    lockManager.Lock(xid, Integer.toString(customerID), TransactionLockObject.LockType.LOCK_WRITE);
     Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       Trace.warn("RM::deleteCustomer(" + xid + ", " + customerID + ") failed--customer doesn't exist");
@@ -433,6 +424,19 @@ public class ResourceManager implements IResourceManager {
       pre_image.get(transactionId).clear();
     }
 
+    synchronized(m_data) {
+      m_data = (RMHashMap) local_copies.get(transactionId).clone();
+      if (master_record.getPointer() == file_A) {
+        file_B.save(m_data);
+        master_record.setPointer(file_B);
+      } else {
+        file_A.save(m_data);
+        master_record.setPointer(file_A);
+      }
+      master_record.setId(transactionId);
+      master_record_file.save(master_record);
+    }
+
     if (lockManager.UnlockAll(transactionId)) {
       Trace.info("RM::commit(" + transactionId + ") succeeded");
       return true;
@@ -453,7 +457,8 @@ public class ResourceManager implements IResourceManager {
 
     if (pre_image.get(transactionId) != null) {
       pre_image.get(transactionId).forEach((key, item) -> {
-        writeData(transactionId, key, item);
+        if (item != null)
+          writeData(transactionId, key, item);
       });
 
     }
@@ -480,19 +485,42 @@ public class ResourceManager implements IResourceManager {
 
   private void addToWriteList(int xid, String key) {
     List<String> list = write_list.get(xid);
-    if (list == null) {
+    if (list == null)
       list = new ArrayList<String>();
-    }
+    if (list.contains(key))
+      return;
     list.add(key);
     write_list.put(xid, list);
   }
 
   private void addToPreImage(int xid, String key, RMItem item) {
     Map<String, RMItem> map = pre_image.get(xid);
-    if (map == null) {
+    if (map == null)
       map = new HashMap<String, RMItem>();
-    }
-    map.put(key, (RMItem) item.clone());
+    if (map.containsKey(key))
+      return;
+    map.put(key, (RMItem) item == null ? null : (RMItem) item.clone());
     pre_image.put(xid, map);
+  }
+
+  private void initializeFiles() {
+    MasterRecord load_master_from_file = master_record_file.load();
+
+    if (load_master_from_file != null) {
+      master_record = load_master_from_file;
+      RMHashMap load_from_file = master_record.getPointer().load();
+
+      if (load_from_file != null) {
+        m_data = load_from_file;
+      } else {
+        file_A.save(m_data);
+        file_B.save(m_data);
+      }
+    } else {
+      master_record.setPointer(file_A);
+      master_record_file.save(master_record);
+      file_A.save(m_data);
+      file_B.save(m_data);
+    }
   }
 }

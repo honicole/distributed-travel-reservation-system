@@ -34,6 +34,15 @@ public class TCPResourceManager extends ResourceManager {
   private static StringBuilder log = new StringBuilder();
   private static int counter = 0;
 
+  /**
+   * Set this to {@code true} only when performing performance analysis
+   */
+  private static final boolean LOG_PERFORMANCE = false;
+  private static String FILENAME;
+  private static File logFile;
+  private static StringBuilder log = new StringBuilder();
+  private static int counter = 0;
+
   private TCPResourceManager() {
   }
 
@@ -73,7 +82,29 @@ public class TCPResourceManager extends ResourceManager {
       }));
     }
 
-    TCPResourceManager rm = new TCPResourceManager();
+    if (LOG_PERFORMANCE) {
+      String timestamp = Long.toString(System.currentTimeMillis());
+      FILENAME = "log-" + timestamp + ".txt";
+      logFile = new File(FILENAME);
+      if (!logFile.exists()) {
+        try {
+          logFile.createNewFile();
+        } catch (IOException e) {
+        }
+      }
+
+      // Write log to disk on Ctrl-C
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        try {
+          BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME));
+          writer.write(log.toString());
+          writer.close();
+        } catch (Exception e) {
+        }
+      }));
+    }
+
+    TCPResourceManager rm = new TCPResourceManager(args[0]);
     rm.setListener(rm.new ResourceManagerListenerImpl());
 
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
@@ -166,7 +197,7 @@ public class TCPResourceManager extends ResourceManager {
                 case "AddCustomerID":
                   oos.writeObject(new Boolean(newCustomer(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
                   break;
-                case "DeleteCustomerID":
+                case "DeleteCustomer":
                   oos.writeObject(new Boolean(deleteCustomer(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
                   break;
                 case "QueryCustomer":
@@ -195,13 +226,13 @@ public class TCPResourceManager extends ResourceManager {
                   e1.printStackTrace();
                 }
                 e.printStackTrace();
-                
+
                 if (LOG_PERFORMANCE) {
                   log.append(counter + ",L," + (System.currentTimeMillis() - start) + "\n");
                 }
               } catch (Exception e) {
                 e.printStackTrace();
-                
+
                 if (LOG_PERFORMANCE) {
                   log.append(counter + ",F," + (System.currentTimeMillis() - start) + "\n");
                 }
