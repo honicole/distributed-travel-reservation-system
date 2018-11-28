@@ -174,6 +174,9 @@ public class TCPResourceManager extends ResourceManager {
                 case "QueryCustomer":
                   oos.writeObject(new String(queryCustomerInfo(Integer.valueOf(args[1]), Integer.valueOf(args[2]))));
                   break;
+                case "prepare":
+                  oos.writeObject(new Boolean(prepare(Integer.valueOf(args[1]))));
+                  break;
                 case "commit":
                   oos.writeObject(new Boolean(commit(Integer.valueOf(args[1]))));
                   break;

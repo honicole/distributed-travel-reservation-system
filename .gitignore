@@ -8,3 +8,5 @@ Server/RMIInterface\.jar
 Middleware/RMIInterface\.jar
 
 bin/
+
+Server/data/

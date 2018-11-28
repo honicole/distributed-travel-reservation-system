@@ -200,18 +200,15 @@ public class ResourceManager implements IResourceManager {
       Car newObj = new Car(location, count, price);
       addToWriteList(xid, newObj.getKey(), newObj);
       addToPreImage(xid, newObj.getKey(), null);
-      Trace.info("RM::ADD TO WRITE LIST XID = " + xid + " KEY = " + newObj.getKey());
       Trace
           .info("RM::addCars(" + xid + ") created new location " + location + ", count=" + count + ", price=$" + price);
     } else {
       addToPreImage(xid, curObj.getKey(), curObj);
-      Trace.info("RM::ADD TO PRE IMAGE XID = " + xid + " KEY = " + curObj.getKey() + " OBJ = " + curObj);
       // Add count to existing car location and update price if greater than zero
       curObj.setCount(curObj.getCount() + count);
       if (price > 0) {
         curObj.setPrice(price);
       }
-      Trace.info("RM::ADD TO WRITE LIST XID = " + xid + " KEY = " + curObj.getKey());
       addToWriteList(xid, curObj.getKey(), curObj);
       Trace.info("RM::addCars(" + xid + ") modified existing location " + location + ", count=" + curObj.getCount()
           + ", price=$" + price);
@@ -391,6 +388,18 @@ public class ResourceManager implements IResourceManager {
   public String getName() throws RemoteException {
     return m_name;
   }
+  
+  public boolean prepare(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException, DeadlockException {
+    if (!write_list.containsKey(xid)) {
+      Trace.info("RM::prepare(" + xid + ") voted NO");
+      abort(xid);
+      return false;
+    }
+    
+    Trace.info("RM::prepare(" + xid + ") voted YES");
+    return true;
+  }
+
 
   @Override
   public boolean commit(int transactionId)
@@ -410,12 +419,15 @@ public class ResourceManager implements IResourceManager {
       if (master_record.getPointer() == file_A) {
         file_B.save(m_data);
         master_record.setPointer(file_B);
+        Trace.info("RM::commit(" + transactionId + ") saved database to file_B");
       } else {
         file_A.save(m_data);
         master_record.setPointer(file_A);
+        Trace.info("RM::commit(" + transactionId + ") saved database to file_A");
       }
       master_record.setId(transactionId);
       master_record_file.save(master_record);
+      Trace.info("RM::commit(" + transactionId + ") saved master record");
     }
 
     if (write_list.get(transactionId) != null) {
@@ -487,19 +499,31 @@ public class ResourceManager implements IResourceManager {
 
     if (load_master_from_file != null) {
       master_record = load_master_from_file;
+      Trace.info("RM::initializeFiles() loaded master record from file");
       RMHashMap load_from_file = master_record.getPointer().load();
 
       if (load_from_file != null) {
         m_data = load_from_file;
+        Trace.info("RM::initializeFiles() loaded database from file");
       } else {
         file_A.save(m_data);
         file_B.save(m_data);
+        Trace.info("RM::initializeFiles() initialized shadow files");
       }
     } else {
       master_record.setPointer(file_A);
       master_record_file.save(master_record);
+      Trace.info("RM::initializeFiles() initialized master record file");
       file_A.save(m_data);
       file_B.save(m_data);
+      Trace.info("RM::initializeFiles() initialized shadow files");
     }
   }
+
+  
+  public void resetCrashes() throws RemoteException {}
+  
+  public void crashMiddleware(int mode) throws RemoteException {}
+  
+  public void crashResourceManager(String name /* RM Name */, int mode) throws RemoteException {}
 }

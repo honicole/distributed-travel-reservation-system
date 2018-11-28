@@ -33,6 +33,7 @@ public enum Command {
   start("Start a transaction", null),
   commit("Commit a transaction", "<xid>"),
   abort("Abort a transaction", "<xid>"),
+  prepare("Prepare and commit a transaction", "<xid>"),
 
   Quit("Exit the client application", "");
 
