@@ -53,7 +53,6 @@ public class TCPMiddleware extends Middleware {
   }
 
   public TCPMiddleware(String[] args) throws Exception {
-    super(new TCPResourceManager(args[2]), new TCPResourceManager(args[4]), new TCPResourceManager(args[6]));
     try {
       this.server = new ServerSocket(Integer.valueOf(args[0]), 1, InetAddress.getLocalHost());
     } catch (NumberFormatException | IOException e) {
