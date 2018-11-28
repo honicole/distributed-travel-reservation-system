@@ -82,7 +82,7 @@ public class TCPClient extends Client {
           System.out.print((char) 27 + "[32;1m\n>] " + (char) 27 + "[0m");
           String command = stdIn.readLine().trim();
           arguments = parse(command);
-          Command cmd = Command.fromString((String) arguments.elementAt(0));
+          Command cmd = Command.fromString(arguments.elementAt(0));
           try {
             execute(cmd, arguments);
           } catch (Exception e) {
@@ -128,7 +128,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -163,7 +163,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -198,7 +198,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -230,7 +230,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -262,7 +262,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -295,7 +295,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -328,7 +328,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -361,7 +361,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -394,7 +394,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -428,7 +428,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -460,7 +460,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -492,7 +492,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -524,7 +524,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -556,7 +556,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -588,7 +588,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -620,7 +620,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -653,7 +653,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -688,7 +688,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -723,7 +723,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -774,7 +774,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -807,7 +807,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -834,7 +834,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -866,7 +866,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -894,7 +894,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -923,7 +923,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
@@ -952,7 +952,7 @@ public class TCPClient extends Client {
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
