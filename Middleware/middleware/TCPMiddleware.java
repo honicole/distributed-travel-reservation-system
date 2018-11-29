@@ -25,6 +25,7 @@ import Client.UserCommand;
 import Server.LockManager.LockManager;
 import Server.LockManager.TransactionLockObject;
 import Server.Common.RMItem;
+import Server.Common.Trace;
 import Server.LockManager.DeadlockException;
 import Server.TCP.TCPResourceManager;
 import exceptions.InvalidTransactionException;
@@ -393,6 +394,7 @@ public class TCPMiddleware extends Middleware {
                   result = TM.resetCrashes();
                   
                   for (String s: s_serverHosts) {
+                    Trace.info(s);
                     sockets_out.get(clientSocket).get(s).writeObject(req);
                     result = (Boolean) result & (Boolean) sockets_in.get(clientSocket).get(s).readObject();
                   }
