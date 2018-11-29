@@ -20,6 +20,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import Client.Command;
+import static Client.Command.*;
 import Client.UserCommand;
 import Server.LockManager.LockManager;
 import Server.LockManager.TransactionLockObject;
@@ -222,7 +223,7 @@ public class TCPMiddleware extends Middleware {
                 final Command cmd = req.getCommand();
                 final String[] args = req.getArgs();
 
-                if (args.length > 1) {
+                if (args.length > 1 && !isCrashCommand(cmd)) {
                   transactionId = Integer.valueOf(args[1]);
                   switch (TM.getStatus(transactionId)) {
                   case ACTIVE:

@@ -71,4 +71,12 @@ public enum Command {
     ret += "Usage: " + name() + "," + m_args;
     return ret;
   }
+  
+  /**
+   * @param cmd
+   * @return {@code true} if the command is used for crashes.
+   */
+  public static boolean isCrashCommand(Command cmd) {
+    return cmd.equals(crashMiddleware) || cmd.equals(crashResourceManager) || cmd.equals(resetCrashes);
+  }
 }
