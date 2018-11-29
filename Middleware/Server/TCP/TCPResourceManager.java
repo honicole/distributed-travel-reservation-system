@@ -104,7 +104,7 @@ public class TCPResourceManager extends ResourceManager {
 
     TCPResourceManager rm = new TCPResourceManager(args[0]);
     rm.setListener(rm.new ResourceManagerListenerImpl());
-    System.out.println(rm.m_name + " resource manager successfully called! :)");
+    System.out.println(rm.m_name + " resource manager successfully called! :)"); // FIXME Prints 1044 RM called
     
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
       while (true) {

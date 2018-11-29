@@ -232,6 +232,7 @@ public class TransactionManager {
    * @param crashMode the crashMode to set
    */
   public boolean setCrashMode(int crashMode) throws RemoteException {
+    System.out.println("Setting crash mode to " + crashMode);
     this.crashMode = crashMode;
     return true;
   }
