@@ -387,7 +387,7 @@ public class TCPMiddleware extends Middleware {
                   break;
                 case "crashResourceManager":
                   for (String s: s_serverHosts) {
-                    sockets_out.get(clientSocket).get(s).writeObject(new String[] {args[1], args[2]});
+                    sockets_out.get(clientSocket).get(s).writeObject(req);
                     result = (Boolean) result & (Boolean) sockets_in.get(clientSocket).get(s).readObject();
                   }
                   break;
