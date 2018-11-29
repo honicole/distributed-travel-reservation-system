@@ -202,6 +202,7 @@ public class TransactionManager {
   }
 
   public boolean resetCrashes() throws RemoteException {
+    Trace.info("Resetting middleware crash mode");
     crashMode = 0;
     return true;
   }
@@ -216,7 +217,7 @@ public class TransactionManager {
    */
   private void crash(int mode) {
     if (crashMode == mode) {
-      System.out.println("Middleware crashed in mode " + mode);
+      Trace.info("Middleware crashed in mode " + mode + "!");
       System.exit(1);
     }
   }

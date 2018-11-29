@@ -392,9 +392,9 @@ public class TCPMiddleware extends Middleware {
                   // Reset the crashes for both the TM and the RMs
                   result = TM.resetCrashes();
                   
-                  // for every resource manager (identified by hostname and port)
-                  {
-                    // result &= rm.resetCrashes();
+                  for (String s: s_serverHosts) {
+                    sockets_out.get(clientSocket).get(s).writeObject(req);
+                    result = (Boolean) result & (Boolean) sockets_in.get(clientSocket).get(s).readObject();
                   }
                   break;
                 }

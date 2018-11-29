@@ -17,6 +17,7 @@ import java.util.concurrent.Executors;
 import Client.Command;
 import Client.UserCommand;
 import Server.Common.ResourceManager;
+import Server.Common.Trace;
 import Server.LockManager.DeadlockException;
 
 public class TCPResourceManager extends ResourceManager {
@@ -122,19 +123,23 @@ public class TCPResourceManager extends ResourceManager {
   }
   
   public boolean resetCrashes() throws RemoteException {
+    Trace.info("Resetting crash mode of " + m_name);
     crashMode = 0;
     return true;
   }
   
   /**
-   * Crashes the specified resource manager.
+   * Sets the crash mode of the specified resource manager.
    * 
    * @param name Name of the resource manager
    * @param mode
    * @throws RemoteException
    */
   public boolean crashResourceManager(String name, int mode) throws RemoteException {
-    if (m_name.equals(name)) setCrashMode(mode);
+    if (m_name.equals(name)) { 
+      Trace.info("Setting crash mode of " + name + " to " + mode);
+      setCrashMode(mode);
+    }
     return true;
   }
   
@@ -144,7 +149,7 @@ public class TCPResourceManager extends ResourceManager {
    */
   private void crash(int mode) {
     if (crashMode == mode) {
-      System.out.println(m_name + " crashed in mode " + mode);
+      Trace.info(m_name + " crashed in mode " + mode + "!");
       System.exit(1);
     }
   }
