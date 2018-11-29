@@ -40,7 +40,7 @@ public class TCPMiddleware extends Middleware {
   /**
    * Set this to {@code true} only when performing performance analysis
    */
-  private static final boolean LOG_PERFORMANCE = true;
+  private static final boolean LOG_PERFORMANCE = false;
   private static final String FILENAME = "./log.txt";
   private static File logFile = new File(FILENAME);
   private static StringBuilder log = new StringBuilder();
@@ -74,14 +74,14 @@ public class TCPMiddleware extends Middleware {
     if (System.getSecurityManager() == null) {
       System.setSecurityManager(new SecurityManager());
     }
-    
+
     if (LOG_PERFORMANCE) {
       if (!logFile.exists()) {
         try {
           logFile.createNewFile();
         } catch (IOException e) {}
       }
-      
+
       // Write log to disk on Ctrl-C
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         try {
@@ -89,25 +89,6 @@ public class TCPMiddleware extends Middleware {
           writer.write(log.toString());
           writer.close();
         } catch (Exception e) {}
-      }));
-    }
-
-    if (LOG_PERFORMANCE) {
-      if (!logFile.exists()) {
-        try {
-          logFile.createNewFile();
-        } catch (IOException e) {
-        }
-      }
-
-      // Write log to disk on Ctrl-C
-      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-        try {
-          BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME));
-          writer.write(log.toString());
-          writer.close();
-        } catch (Exception e) {
-        }
       }));
     }
 
@@ -144,7 +125,7 @@ public class TCPMiddleware extends Middleware {
       boolean prepare_to_commit = true;
 
       for (int i = 0; i < 5; i++) {
-        CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+        CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
           Object result = null;
           String[] cmd_args = new String[] { "prepare", Integer.toString(transactionId) };
           UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
@@ -171,7 +152,7 @@ public class TCPMiddleware extends Middleware {
     }
 
     public boolean commit(Socket clientSocket, int transactionId, String rm) {
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         Object result = null;
         String[] cmd_args = new String[] { "commit", Integer.toString(transactionId) };
         UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
@@ -197,7 +178,7 @@ public class TCPMiddleware extends Middleware {
     }
 
     public void abort(Socket clientSocket, int transactionId, String rm) {
-      CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         String[] cmd_args = new String[] { "abort", Integer.toString(transactionId) };
         UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
         try {
@@ -233,7 +214,7 @@ public class TCPMiddleware extends Middleware {
           final UserCommand[] client_command = new UserCommand[1];
           while ((client_command[0] = (UserCommand) client_in.readObject()) != null) {
             long start = System.currentTimeMillis();
-            CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
               Object result = null;
               int transactionId = -1;
               try {
@@ -398,6 +379,22 @@ public class TCPMiddleware extends Middleware {
                   break;
                 case "abort":
                   result = TM.abort(clientSocket, transactionId);
+                  break;
+                case "crashMiddleware":
+                  result = TM.setCrashMode(Integer.valueOf(args[1]));
+                  break;
+                case "crashResourceManager":
+                  sockets_out.get(clientSocket).get(args[1]).writeObject(new String[] {args[1], args[2]});
+                  result = sockets_in.get(clientSocket).get(args[1]).readObject();
+                  break;
+                case "resetCrashes":
+                  // Reset the crashes for both the TM and the RMs
+                  result = TM.resetCrashes();
+                  
+                  // for every resource manager (identified by hostname and port)
+                  {
+                    // result &= rm.resetCrashes();
+                  }
                   break;
                 }
 

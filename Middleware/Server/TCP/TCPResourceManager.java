@@ -9,6 +9,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.rmi.RemoteException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -28,19 +29,28 @@ public class TCPResourceManager extends ResourceManager {
   /**
    * Set this to {@code true} only when performing performance analysis
    */
-  private static final boolean LOG_PERFORMANCE = true;
+  private static final boolean LOG_PERFORMANCE = false;
   private static String FILENAME;
   private static File logFile;
   private static StringBuilder log = new StringBuilder();
   private static int counter = 0;
+  //@formatter:off
+  /** <pre>{@code Crash mode based on an int as follows:
+    1. Crash after receive vote request but before sending answer
+    2. Crash after deciding which answer to send (commit/abort)
+    3. Crash after sending answer
+    4. Crash after receiving decision but before committing/aborting
+    5. Crash during recovery}</pre>
+   */
+  private int crashMode;
+  //@formatter:on
 
   public TCPResourceManager(String name) {
     super(name);
   }
 
   public static void main(String[] args) {
-    System.out.println("TCPResourceManager successfully called! :)");
-
+    
     if (args.length > 0) {
       s_serverPort = Integer.valueOf(args[0]);
     }
@@ -94,7 +104,8 @@ public class TCPResourceManager extends ResourceManager {
 
     TCPResourceManager rm = new TCPResourceManager(args[0]);
     rm.setListener(rm.new ResourceManagerListenerImpl());
-
+    System.out.println(rm.m_name + " resource manager successfully called! :)");
+    
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
       while (true) {
         Socket clientSocket = serverSocket.accept();
@@ -109,6 +120,48 @@ public class TCPResourceManager extends ResourceManager {
   public void setListener(ResourceManagerListener listener) {
     this.listener = listener;
   }
+  
+  public boolean resetCrashes() throws RemoteException {
+    crashMode = 0;
+    return true;
+  }
+  
+  /**
+   * Crashes the specified resource manager.
+   * 
+   * @param name Name of the resource manager
+   * @param mode
+   * @throws RemoteException
+   */
+  public boolean crashResourceManager(String name, int mode) throws RemoteException {
+    if (m_name.equals(name)) setCrashMode(mode);
+    return true;
+  }
+  
+  /**
+   * Crashes the transaction manager by calling {@code System.exit(1);} if the crash mode is set to the given mode
+   * @param mode
+   */
+  private void crash(int mode) {
+    if (crashMode == mode) {
+      System.out.println(m_name + " crashed in mode " + mode);
+      System.exit(1);
+    }
+  }
+
+  /**
+   * @return the crashMode
+   */
+  public int getCrashMode() {
+    return crashMode;
+  }
+
+  /**
+   * @param crashMode the crashMode to set
+   */
+  public void setCrashMode(int crashMode) {
+    this.crashMode = crashMode;
+  }
 
   class ResourceManagerListenerImpl implements ResourceManagerListener {
 
@@ -122,7 +175,7 @@ public class TCPResourceManager extends ResourceManager {
           final UserCommand[] fromClient = new UserCommand[1];
           while ((fromClient[0] = (UserCommand) ois.readObject()) != null) {
             long start = System.currentTimeMillis();
-            CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
               try {
                 final UserCommand req = fromClient[0];
                 final Command cmd = req.getCommand();
@@ -203,6 +256,12 @@ public class TCPResourceManager extends ResourceManager {
                 case "shutdown":
                   shutdown();
                   break;
+                case "crashResourceManager":
+                  crashResourceManager(args[1], Integer.valueOf(args[2]));
+                  break;
+                case "resetCrashes":
+                  crashMode = 0;
+                  break;
                 }
                 
                 if (LOG_PERFORMANCE) {
@@ -241,5 +300,7 @@ public class TCPResourceManager extends ResourceManager {
       };
       executor.execute(r);
     }
+    
   }
+  
 }

@@ -19,6 +19,19 @@ public class TransactionManager {
   private Map<Integer, Transaction> transactions;
   private Map<Integer, Timer> time_to_live;
   private MiddlewareListener middleware;
+  //@formatter:off
+  /** <pre>{@code Crash mode based on an int as follows:
+    1. Crash before sending vote request
+    2. Crash after sending vote request and before receiving any replies
+    3. Crash after receiving some replies but not all
+    4. Crash after receiving all replies but before deciding
+    5. Crash after deciding but before sending decision
+    6. Crash after sending some but not all decisions
+    7. Crash after having sent all decisions
+    8. Recovery of the coordinator (if you have decided to implement coordinator recovery)}</pre>
+   */
+  private int crashMode;
+  //@formatter:on
 
   public TransactionManager(MiddlewareListener middleware) {
     this.middleware = middleware;
@@ -56,7 +69,9 @@ public class TransactionManager {
 
     setStatus(transactionId, Status.PREPARING_COMMIT);
     Trace.info("TM::prepare(" + transactionId + ") Transaction is preparing to commit");
-
+    
+    crash(1);
+    
     boolean prepare_to_commit = true;
     for (String rm : transaction.resourceManagersList) {
       boolean vote = this.middleware.prepare(socket, transactionId, rm);
@@ -186,12 +201,38 @@ public class TransactionManager {
     }
   }
 
-  public void resetCrashes() throws RemoteException {
+  public boolean resetCrashes() throws RemoteException {
+    crashMode = 0;
+    return true;
   }
 
   public void crashMiddleware(int mode) throws RemoteException {
+    setCrashMode(mode);
+  }
+  
+  /**
+   * Crashes the transaction manager by calling {@code System.exit(1);} if the crash mode is set to the given mode
+   * @param mode
+   */
+  private void crash(int mode) {
+    if (crashMode == mode) {
+      System.out.println("Middleware crashed in mode " + mode);
+      System.exit(1);
+    }
   }
 
-  public void crashResourceManager(String name /* RM Name */, int mode) throws RemoteException {
+  /**
+   * @return the crashMode
+   */
+  public int getCrashMode() {
+    return crashMode;
+  }
+
+  /**
+   * @param crashMode the crashMode to set
+   */
+  public boolean setCrashMode(int crashMode) throws RemoteException {
+    this.crashMode = crashMode;
+    return true;
   }
 }

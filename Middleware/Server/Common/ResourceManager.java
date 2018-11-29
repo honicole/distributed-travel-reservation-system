@@ -389,7 +389,8 @@ public class ResourceManager implements IResourceManager {
     return m_name;
   }
   
-  public boolean prepare(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException, DeadlockException {
+  public boolean prepare(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException, 
+      DeadlockException {
     if (!write_list.get(xid).isEmpty()) {
       Trace.info("RM::prepare(" + xid + ") voted NO");
       abort(xid);
@@ -518,11 +519,5 @@ public class ResourceManager implements IResourceManager {
       Trace.info("RM::initializeFiles() initialized shadow files");
     }
   }
-
   
-  public void resetCrashes() throws RemoteException {}
-  
-  public void crashMiddleware(int mode) throws RemoteException {}
-  
-  public void crashResourceManager(String name /* RM Name */, int mode) throws RemoteException {}
 }

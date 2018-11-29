@@ -890,7 +890,7 @@ public class TCPClient extends Client {
     case crashMiddleware: {
       checkArgumentsCount(2, arguments.size());
 
-      System.out.println("Enabling crash mode [mode=" + arguments.elementAt(1) + "]");
+      System.out.println("Enabling middleware crash mode [mode=" + arguments.elementAt(1) + "]");
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
@@ -907,9 +907,9 @@ public class TCPClient extends Client {
       try {
         Object result = future.get();
         if ((boolean) result) {
-          System.out.println("Crash mode enabled");
+          System.out.println("Middleware crash mode enabled");
         } else {
-          System.out.println("Crash mode could not be enabled");
+          System.out.println("Middleware crash mode could not be enabled");
         }
       } catch (Exception e) {
         e.printStackTrace();
@@ -919,7 +919,8 @@ public class TCPClient extends Client {
     case crashResourceManager: {
       checkArgumentsCount(3, arguments.size());
 
-      System.out.println("Enabling crash mode [mode=" + arguments.elementAt(2) + "] at resource manager [rm=" + arguments.elementAt(1) + "]");
+      System.out.println("Enabling crash mode [mode=" + arguments.elementAt(2) + "] at resource manager [rm=" 
+          + arguments.elementAt(1) + "]");
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
       final UserCommand packagedCommand = new UserCommand(cmd, args);
