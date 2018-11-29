@@ -262,10 +262,12 @@ public class TCPResourceManager extends ResourceManager {
                   shutdown();
                   break;
                 case "crashResourceManager":
-                  crashResourceManager(args[1], Integer.valueOf(args[2]));
+                  String[] input = (String[]) ois.readObject();
+                  crashResourceManager(input[0], Integer.valueOf(input[1]));
                   break;
                 case "resetCrashes":
                   crashMode = 0;
+                  oos.writeObject(true);
                   break;
                 }
                 

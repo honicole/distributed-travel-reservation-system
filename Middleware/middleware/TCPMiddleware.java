@@ -386,15 +386,17 @@ public class TCPMiddleware extends Middleware {
                   result = TM.setCrashMode(Integer.valueOf(args[1]));
                   break;
                 case "crashResourceManager":
-                  sockets_out.get(clientSocket).get(args[1]).writeObject(new String[] {args[1], args[2]});
-                  result = sockets_in.get(clientSocket).get(args[1]).readObject();
+                  for (String s: s_serverHosts) {
+                    sockets_out.get(clientSocket).get(s).writeObject(new String[] {args[1], args[2]});
+                    result = (Boolean) result & (Boolean) sockets_in.get(clientSocket).get(s).readObject();
+                  }
                   break;
                 case "resetCrashes":
                   // Reset the crashes for both the TM and the RMs
                   result = TM.resetCrashes();
                   
                   for (String s: s_serverHosts) {
-                    Trace.info(s);
+                    Trace.info("Resetting " + s);
                     sockets_out.get(clientSocket).get(s).writeObject(req);
                     result = (Boolean) result & (Boolean) sockets_in.get(clientSocket).get(s).readObject();
                   }
