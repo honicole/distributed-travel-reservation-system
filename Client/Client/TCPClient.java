@@ -818,7 +818,7 @@ public class TCPClient extends Client {
       }, executor);
 
       try {
-        int xid = (int) future.get();
+        int xid = (Integer) future.get();
         this.xid = xid;
         System.out.println("Transaction id: " + xid);
       } catch (Exception e) {
@@ -877,7 +877,7 @@ public class TCPClient extends Client {
       }, executor);
 
       try {
-        if ((boolean) future.get()) {
+        if ((Boolean) future.get()) {
           System.out.println("Transaction was aborted");
         } else {
           System.out.println("Transaction could not be aborted");
