@@ -104,7 +104,6 @@ public class TCPMiddleware extends Middleware {
     TM = new TransactionManager(getListener());
 
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
-      TCPMiddleware middleware = new TCPMiddleware(args);
       while (true) {
         Socket clientSocket = serverSocket.accept();
         listener.onNewConnection(clientSocket);
@@ -295,7 +294,7 @@ public class TCPMiddleware extends Middleware {
                 case "QueryFlight":
                 case "QueryFlightPrice":
                   for (Socket socket : sockets_out.get(clientSocket).keySet()) {
-                    if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[0]))
+                    if (socket.getInetAddress().equals(InetAddress.getByName(s_serverHosts[0])))
                       s_socket = socket;
                   }
                   TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
@@ -309,7 +308,7 @@ public class TCPMiddleware extends Middleware {
                 case "QueryCars":
                 case "QueryCarsPrice":
                   for (Socket socket : sockets_out.get(clientSocket).keySet()) {
-                    if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[1]))
+                    if (socket.getInetAddress().equals(InetAddress.getByName(s_serverHosts[1])))
                       s_socket = socket;
                   }
                   TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
@@ -323,7 +322,7 @@ public class TCPMiddleware extends Middleware {
                 case "QueryRooms":
                 case "QueryRoomsPrice":
                   for (Socket socket : sockets_out.get(clientSocket).keySet()) {
-                    if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[2]))
+                    if (socket.getInetAddress().equals(InetAddress.getByName(s_serverHosts[2])))
                       s_socket = socket;
                   }
                   TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
@@ -440,7 +439,7 @@ public class TCPMiddleware extends Middleware {
                   result = TM.setCrashMode(Integer.valueOf(args[1]));
                   break;
                 case "crashResourceManager":
-                  for (String s : s_serverHosts) {
+                  for (Socket s : sockets_out.get(clientSocket).keySet()) {
                     sockets_out.get(clientSocket).get(s).writeObject(req);
                     success &= (Boolean) sockets_in.get(clientSocket).get(s).readObject();
                   }
@@ -448,8 +447,8 @@ public class TCPMiddleware extends Middleware {
                   break;
                 case "resetCrashes":
                   success &= TM.resetCrashes();
-                  for (String s : s_serverHosts) {
-                    Trace.info("Resetting " + s);
+                  for (Socket s : sockets_out.get(clientSocket).keySet()) {
+                    Trace.info("Resetting " + s.getPort());
                     sockets_out.get(clientSocket).get(s).writeObject(req);
                     success &= (Boolean) sockets_in.get(clientSocket).get(s).readObject();
                   }
