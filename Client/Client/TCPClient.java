@@ -314,7 +314,8 @@ public class TCPClient extends Client {
           System.out.println("Deadlock detected -- transaction aborted");
         } else if (result instanceof InvalidTransactionException || result instanceof Boolean) {
           System.out.println("Customer could not be added");
-          System.out.println(((Exception) result).getMessage());
+          if (result instanceof InvalidTransactionException)
+            System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Add customer ID: " + arguments.elementAt(2));
         } else {
