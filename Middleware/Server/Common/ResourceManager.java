@@ -463,12 +463,12 @@ public class ResourceManager implements IResourceManager {
       Trace.info("RM::commit(" + transactionId + ") saved master record");
     }
 
-    if (write_list.get(transactionId) != null) {
-      write_list.get(transactionId).clear();
-    }
-    if (pre_image.get(transactionId) != null) {
-      pre_image.get(transactionId).clear();
-    }
+//    if (write_list.get(transactionId) != null) {
+//      write_list.get(transactionId).clear();
+//    }
+//    if (pre_image.get(transactionId) != null) {
+//      pre_image.get(transactionId).clear();
+//    }
 
     if (lockManager.UnlockAll(transactionId)) {
       log.write("RM-" + getName() + "\t" + transactionId + "\tCOMMIT");
@@ -485,12 +485,12 @@ public class ResourceManager implements IResourceManager {
 
     Trace.info("RM::abort(" + transactionId + ") called");
 
-    if (write_list.get(transactionId) != null) {
-      write_list.get(transactionId).clear();
-    }
-    if (pre_image.get(transactionId) != null) {
-      pre_image.get(transactionId).clear();
-    }
+//    if (write_list.get(transactionId) != null) {
+//      write_list.get(transactionId).clear();
+//    }
+//    if (pre_image.get(transactionId) != null) {
+//      pre_image.get(transactionId).clear();
+//    }
 
     lockManager.UnlockAll(transactionId);
     log.write("RM-" + getName() + "\t" + transactionId + "\tABORT");

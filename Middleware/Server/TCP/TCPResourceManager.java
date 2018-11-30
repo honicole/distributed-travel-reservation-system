@@ -9,7 +9,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.rmi.RemoteException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -17,7 +16,6 @@ import java.util.concurrent.Executors;
 import Client.Command;
 import Client.UserCommand;
 import Server.Common.ResourceManager;
-import Server.Common.Trace;
 import Server.LockManager.DeadlockException;
 
 public class TCPResourceManager extends ResourceManager {

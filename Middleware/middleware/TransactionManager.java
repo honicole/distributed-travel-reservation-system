@@ -3,6 +3,7 @@ package middleware;
 import java.io.Serializable;
 import java.net.Socket;
 import java.rmi.RemoteException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,9 +16,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import Client.Command;
-import Client.UserCommand;
 import Server.Common.Log;
+import Server.Common.ShadowPage;
 import Server.Common.Trace;
 import exceptions.InvalidTransactionException;
 import exceptions.TransactionAbortedException;
@@ -31,6 +31,8 @@ public class TransactionManager {
   private MiddlewareListener middleware;
   private Executor executor = Executors.newFixedThreadPool(8);
   private static Log log = new Log();
+  protected ShadowPage<Map<Integer, Transaction>> transaction_file;
+
   //@formatter:off
   /** <pre>{@code Crash mode based on an int as follows:
     1. Crash before sending vote request
@@ -47,9 +49,11 @@ public class TransactionManager {
 
   public TransactionManager(MiddlewareListener middleware) {
     this.middleware = middleware;
-    this.xid = 0;
     this.transactions = new HashMap<>();
     this.time_to_live = new HashMap<>();
+    this.transaction_file = new ShadowPage<>("transactions");
+    initializeFiles();
+    this.xid = transactions.isEmpty() ? 0 : Collections.max(transactions.keySet());
   }
 
   public enum Status {
@@ -79,10 +83,10 @@ public class TransactionManager {
       throws RemoteException, TransactionAbortedException, InvalidTransactionException {
     Transaction transaction = transactions.get(transactionId);
 
-    
     setStatus(transactionId, Status.PREPARING_COMMIT);
     Trace.info("TM::prepare() Starting 2-phase commit protocol");
     log.write("TM\t" + transactionId + "\tSTART_2PC");
+    transaction_file.save(transactions);
 
     crash(1);
 
@@ -98,9 +102,11 @@ public class TransactionManager {
       try {
         boolean vote = (Boolean) future.get(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
         // Consensus required. One No vote is enough to veto
-        if (vote) yesVotes++;
-        else yesVotes = 0;
-        
+        if (vote)
+          yesVotes++;
+        else
+          yesVotes = 0;
+
         crash(3);
         prepare_to_commit &= vote;
       } catch (InterruptedException | ExecutionException e) {
@@ -115,12 +121,14 @@ public class TransactionManager {
     if (prepare_to_commit && yesVotes > 0) {
       Trace.info("TM::prepare() decided to COMMIT");
       log.write("TM\t" + transactionId + "\tCOMMIT");
+      transaction_file.save(transactions);
       crash(5);
       return commit(socket, transactionId);
     }
-    
+
     Trace.info("TM::prepare() decided to ABORT");
     log.write("TM\t" + transactionId + "\tABORT");
+    transaction_file.save(transactions);
     crash(5);
     abort(socket, transactionId);
     return false;
@@ -170,6 +178,8 @@ public class TransactionManager {
     }
 
     setStatus(transactionId, Status.ABORTED);
+    
+    
     HashSet<String> abortList = transaction.resourceManagersList;
     if (!transaction.prepareToCommitList.isEmpty()) {
       abortList = transaction.prepareToCommitList;
@@ -285,5 +295,17 @@ public class TransactionManager {
     Trace.info("Setting crash mode to " + crashMode);
     this.crashMode = crashMode;
     return true;
+  }
+
+  private void initializeFiles() {
+    Map<Integer, Transaction> load_transactions_from_file = transaction_file.load();
+
+    if (load_transactions_from_file != null) {
+      Trace.info("RM::initializeFiles() loaded transactions from file");
+      transactions = load_transactions_from_file;
+    } else {
+      transaction_file.save(transactions);
+      Trace.info("RM::initializeFiles() initialized transactions file");
+    }
   }
 }

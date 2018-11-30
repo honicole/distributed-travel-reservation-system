@@ -14,6 +14,10 @@ public class ShadowPage<T> implements Serializable {
   public static final String FILE_EXTENSION = "data";
   private File file;
 
+  public ShadowPage(String name) {
+    file = new File(OUTPUT_FOLDER + "/" + name + "." + FILE_EXTENSION);
+  }
+
   public ShadowPage(String rm, String name) {
     file = new File(OUTPUT_FOLDER + "/" + rm + "/" + name + "." + FILE_EXTENSION);
   }
