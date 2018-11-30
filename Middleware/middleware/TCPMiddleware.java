@@ -128,17 +128,17 @@ public class TCPMiddleware extends Middleware {
     return TCPMiddleware.listener;
   }
   
-  @SuppressWarnings("serial")
+  @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
   private void resetRmSockets() throws UnknownHostException, IOException {
     rmSockets = new HashMap<Socket, List<?>>();
     Socket s, t, u;
-    rmSockets.put(s = new Socket(s_serverHosts[0], s_serverPorts[0]), new ArrayList<>() {{ 
+    rmSockets.put(s = new Socket(s_serverHosts[0], s_serverPorts[0]), new ArrayList() {{ 
       add(new ObjectOutputStream(s.getOutputStream())); add(new ObjectInputStream(s.getInputStream()));
     }});
-    rmSockets.put(t = new Socket(s_serverHosts[1], s_serverPorts[1]), new ArrayList<>() {{ 
+    rmSockets.put(t = new Socket(s_serverHosts[1], s_serverPorts[1]), new ArrayList() {{ 
       add(new ObjectOutputStream(t.getOutputStream())); add(new ObjectInputStream(t.getInputStream()));
     }});
-    rmSockets.put(u = new Socket(s_serverHosts[2], s_serverPorts[2]), new ArrayList<>() {{ 
+    rmSockets.put(u = new Socket(s_serverHosts[2], s_serverPorts[2]), new ArrayList() {{ 
       add(new ObjectOutputStream(u.getOutputStream())); add(new ObjectInputStream(u.getInputStream()));
     }});
   }
@@ -602,7 +602,7 @@ public class TCPMiddleware extends Middleware {
       executor.execute(r);
     }
 
-    @SuppressWarnings("serial")
+    @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
     public void reconnect(Socket clientSocket) {
       System.out.println("Connection lost. Reconnecting...");
       
@@ -613,7 +613,7 @@ public class TCPMiddleware extends Middleware {
             s = new Socket(s_socket.getInetAddress(), s_socket.getPort());
             
             Socket t;
-            rmSockets.put(t = new Socket(s_socket.getInetAddress(), s_socket.getPort()), new ArrayList<>() {{ 
+            rmSockets.put(t = new Socket(s_socket.getInetAddress(), s_socket.getPort()), new ArrayList() {{ 
               add(new ObjectOutputStream(t.getOutputStream())); add(new ObjectInputStream(t.getInputStream()));
             }});
             rmSockets.remove(s_socket);
