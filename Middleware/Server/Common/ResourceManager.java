@@ -29,6 +29,9 @@ public class ResourceManager implements IResourceManager {
   protected ShadowPage<MasterRecord> master_record_file;
   protected MasterRecord master_record = new MasterRecord();
 
+  public static Log log = new Log();
+  private int crashMode = 0;
+
   public ResourceManager() {
     lockManager = new LockManager();
   }
@@ -73,7 +76,8 @@ public class ResourceManager implements IResourceManager {
     Trace.info("RM::deleteItem(" + xid + ", " + key + ") called");
     lockManager.Lock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
     ReservableItem curObj = write_list.get(xid) != null && write_list.get(xid).containsKey(key)
-        ? (ReservableItem) write_list.get(xid).get(key) : (ReservableItem) readData(xid, key);
+        ? (ReservableItem) write_list.get(xid).get(key)
+        : (ReservableItem) readData(xid, key);
     // Check if there is such an item in the storage
     if (curObj == null) {
       Trace.warn("RM::deleteItem(" + xid + ", " + key + ") failed--item doesn't exist");
@@ -97,7 +101,8 @@ public class ResourceManager implements IResourceManager {
     Trace.info("RM::queryNum(" + xid + ", " + key + ") called");
     lockManager.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
     ReservableItem curObj = write_list.get(xid) != null && write_list.get(xid).containsKey(key)
-        ? (ReservableItem) write_list.get(xid).get(key) : (ReservableItem) readData(xid, key);
+        ? (ReservableItem) write_list.get(xid).get(key)
+        : (ReservableItem) readData(xid, key);
     int value = 0;
     if (curObj != null) {
       value = curObj.getCount();
@@ -111,7 +116,8 @@ public class ResourceManager implements IResourceManager {
     Trace.info("RM::queryPrice(" + xid + ", " + key + ") called");
     lockManager.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
     ReservableItem curObj = write_list.get(xid) != null && write_list.get(xid).containsKey(key)
-        ? (ReservableItem) write_list.get(xid).get(key) : (ReservableItem) readData(xid, key);
+        ? (ReservableItem) write_list.get(xid).get(key)
+        : (ReservableItem) readData(xid, key);
     int value = 0;
     if (curObj != null) {
       value = curObj.getPrice();
@@ -125,7 +131,8 @@ public class ResourceManager implements IResourceManager {
     Trace.info("RM::reserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called");
     lockManager.Lock(xid, key, TransactionLockObject.LockType.LOCK_READ);
     Customer customer = write_list.get(xid) != null && write_list.get(xid).containsKey(Customer.getKey(customerID))
-        ? (Customer) write_list.get(xid).get(Customer.getKey(customerID)) : (Customer) readData(xid, Customer.getKey(customerID));
+        ? (Customer) write_list.get(xid).get(Customer.getKey(customerID))
+        : (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location
           + ")  failed--customer doesn't exist");
@@ -134,7 +141,8 @@ public class ResourceManager implements IResourceManager {
 
     // Check if the item is available
     ReservableItem item = write_list.get(xid) != null && write_list.get(xid).containsKey(key)
-        ? (ReservableItem) write_list.get(xid).get(key) : (ReservableItem) readData(xid, key);
+        ? (ReservableItem) write_list.get(xid).get(key)
+        : (ReservableItem) readData(xid, key);
     if (item == null) {
       Trace.warn(
           "RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--item doesn't exist");
@@ -194,7 +202,8 @@ public class ResourceManager implements IResourceManager {
     Trace.info("RM::addCars(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
     lockManager.Lock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
     Car curObj = write_list.get(xid) != null && write_list.get(xid).containsKey(Car.getKey(location))
-        ? (Car) write_list.get(xid).get(Car.getKey(location)) : (Car) readData(xid, Car.getKey(location));
+        ? (Car) write_list.get(xid).get(Car.getKey(location))
+        : (Car) readData(xid, Car.getKey(location));
     if (curObj == null) {
       // Car location doesn't exist yet, add it
       Car newObj = new Car(location, count, price);
@@ -222,7 +231,8 @@ public class ResourceManager implements IResourceManager {
     Trace.info("RM::addRooms(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
     lockManager.Lock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
     Room curObj = write_list.get(xid) != null && write_list.get(xid).containsKey(Room.getKey(location))
-        ? (Room) write_list.get(xid).get(Room.getKey(location)) : (Room) readData(xid, Room.getKey(location));
+        ? (Room) write_list.get(xid).get(Room.getKey(location))
+        : (Room) readData(xid, Room.getKey(location));
     if (curObj == null) {
       // Room location doesn't exist yet, add it
       Room newObj = new Room(location, count, price);
@@ -291,7 +301,8 @@ public class ResourceManager implements IResourceManager {
   public String queryCustomerInfo(int xid, int customerID) throws RemoteException, DeadlockException {
     Trace.info("RM::queryCustomerInfo(" + xid + ", " + customerID + ") called");
     Customer customer = write_list.get(xid) != null && write_list.get(xid).containsKey(Customer.getKey(customerID))
-        ? (Customer) write_list.get(xid).get(Customer.getKey(customerID)) : (Customer) readData(xid, Customer.getKey(customerID));
+        ? (Customer) write_list.get(xid).get(Customer.getKey(customerID))
+        : (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       Trace.warn("RM::queryCustomerInfo(" + xid + ", " + customerID + ") failed--customer doesn't exist");
       // NOTE: don't change this--WC counts on this value indicating a customer does not exist...
@@ -318,7 +329,8 @@ public class ResourceManager implements IResourceManager {
   public boolean newCustomer(int xid, int customerID) throws RemoteException, DeadlockException {
     Trace.info("RM::newCustomer(" + xid + ", " + customerID + ") called");
     Customer customer = write_list.get(xid) != null && write_list.get(xid).containsKey(Customer.getKey(customerID))
-        ? (Customer) write_list.get(xid).get(Customer.getKey(customerID)) : (Customer) readData(xid, Customer.getKey(customerID));
+        ? (Customer) write_list.get(xid).get(Customer.getKey(customerID))
+        : (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       customer = new Customer(customerID);
       addToWriteList(xid, customer.getKey(), customer);
@@ -334,7 +346,8 @@ public class ResourceManager implements IResourceManager {
   public boolean deleteCustomer(int xid, int customerID) throws RemoteException, DeadlockException {
     Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") called");
     Customer customer = write_list.get(xid) != null && write_list.get(xid).containsKey(Customer.getKey(customerID))
-        ? (Customer) write_list.get(xid).get(Customer.getKey(customerID)) : (Customer) readData(xid, Customer.getKey(customerID));
+        ? (Customer) write_list.get(xid).get(Customer.getKey(customerID))
+        : (Customer) readData(xid, Customer.getKey(customerID));
     if (customer == null) {
       Trace.warn("RM::deleteCustomer(" + xid + ", " + customerID + ") failed--customer doesn't exist");
       return false;
@@ -345,7 +358,7 @@ public class ResourceManager implements IResourceManager {
         ReservedItem reserveditem = customer.getReservedItem(reservedKey);
         Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditem.getKey() + " "
             + reserveditem.getCount() + " times");
-        
+
         ReservableItem item = (ReservableItem) readData(xid, reserveditem.getKey());
         addToPreImage(xid, item.getKey(), item);
         Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditem.getKey()
@@ -388,22 +401,42 @@ public class ResourceManager implements IResourceManager {
   public String getName() throws RemoteException {
     return m_name;
   }
-  
-  public boolean prepare(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException, 
-      DeadlockException {
-    if (!write_list.get(xid).isEmpty()) {
+
+  public boolean prepare(int xid)
+      throws RemoteException, TransactionAbortedException, InvalidTransactionException, DeadlockException {
+    crash(1);
+
+    if (write_list.get(xid).isEmpty()) {
       Trace.info("RM::prepare(" + xid + ") voted NO");
+      log.write("RM-" + getName() + "\t" + xid + "\tABORT");
+      crash(2);
       abort(xid);
+      new Timer().schedule(new TimerTask() {
+        @Override
+        public void run() {
+          crash(3);
+        }
+      }, 500);
       return false;
     }
-    
+
     Trace.info("RM::prepare(" + xid + ") voted YES");
+    log.write("RM-" + getName() + "\t" + xid + "\tYES");
+    crash(2);
+    new Timer().schedule(new TimerTask() {
+      @Override
+      public void run() {
+        crash(3);
+      }
+    }, 500);
     return true;
   }
 
   @Override
   public boolean commit(int transactionId)
       throws RemoteException, TransactionAbortedException, InvalidTransactionException {
+    crash(4);
+
     Trace.info("RM::commit(" + transactionId + ") called");
 
     synchronized (m_data) {
@@ -438,6 +471,7 @@ public class ResourceManager implements IResourceManager {
     }
 
     if (lockManager.UnlockAll(transactionId)) {
+      log.write("RM-" + getName() + "\t" + transactionId + "\tCOMMIT");
       Trace.info("RM::commit(" + transactionId + ") succeeded");
       return true;
     } else {
@@ -447,6 +481,8 @@ public class ResourceManager implements IResourceManager {
 
   @Override
   public void abort(int transactionId) throws RemoteException, InvalidTransactionException, DeadlockException {
+    crash(4);
+
     Trace.info("RM::abort(" + transactionId + ") called");
 
     if (write_list.get(transactionId) != null) {
@@ -457,6 +493,7 @@ public class ResourceManager implements IResourceManager {
     }
 
     lockManager.UnlockAll(transactionId);
+    log.write("RM-" + getName() + "\t" + transactionId + "\tABORT");
     Trace.info("RM::abort(" + transactionId + ") succeeded");
     return;
 
@@ -519,5 +556,52 @@ public class ResourceManager implements IResourceManager {
       Trace.info("RM::initializeFiles() initialized shadow files");
     }
   }
-  
+
+  public boolean resetCrashes() throws RemoteException {
+    Trace.info("Resetting crash mode of " + m_name);
+    crashMode = 0;
+    return true;
+  }
+
+  /**
+   * Sets the crash mode of the specified resource manager.
+   * 
+   * @param name Name of the resource manager
+   * @param mode
+   * @throws RemoteException
+   */
+  public boolean crashResourceManager(String name, int mode) throws RemoteException {
+    if (m_name.equals(name)) {
+      Trace.info("Setting crash mode of " + name + " to " + mode);
+      setCrashMode(mode);
+    }
+    return true;
+  }
+
+  /**
+   * Crashes the transaction manager by calling {@code System.exit(1);} if the crash mode is set to the given mode
+   * 
+   * @param mode
+   */
+  private void crash(int mode) {
+    if (crashMode == mode) {
+      Trace.info(m_name + " crashed in mode " + mode + "!");
+      System.exit(1);
+    }
+  }
+
+  /**
+   * @return the crashMode
+   */
+  public int getCrashMode() {
+    return crashMode;
+  }
+
+  /**
+   * @param crashMode the crashMode to set
+   */
+  public void setCrashMode(int crashMode) {
+    this.crashMode = crashMode;
+  }
+
 }

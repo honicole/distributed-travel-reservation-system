@@ -10,7 +10,7 @@ import java.io.Serializable;
 
 public class ShadowPage<T> implements Serializable {
   private static final long serialVersionUID = 992150778513571821L;
-  public static final String OUTPUT_FOLDER = "data";
+  public static final String OUTPUT_FOLDER = "../data";
   public static final String FILE_EXTENSION = "data";
   private File file;
 
