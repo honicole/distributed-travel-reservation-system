@@ -1,15 +1,19 @@
 package Client;
 
 import java.io.BufferedReader;
+import java.io.EOFException;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -133,6 +137,8 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -171,6 +177,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -209,6 +218,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -244,6 +256,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -283,6 +298,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -294,7 +312,7 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Customer could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
-        } else if (result instanceof InvalidTransactionException) {
+        } else if (result instanceof InvalidTransactionException || result instanceof Boolean) {
           System.out.println("Customer could not be added");
           System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
@@ -319,6 +337,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -355,6 +376,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -391,6 +415,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -427,6 +454,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -464,6 +494,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -478,6 +511,8 @@ public class TCPClient extends Client {
         } else if (result instanceof InvalidTransactionException) {
           System.out.println("Flight could not be queried");
           System.out.println(((Exception) result).getMessage());
+        } else if (result instanceof Boolean) {
+          System.out.println("Flight could not be queried");
         } else {
           int seats = (int) result;
           System.out.println("Number of seats available: " + seats);
@@ -499,6 +534,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -513,6 +551,8 @@ public class TCPClient extends Client {
         } else if (result instanceof InvalidTransactionException) {
           System.out.println("Cars could not be queried");
           System.out.println(((Exception) result).getMessage());
+        } else if (result instanceof Boolean) {
+          System.out.println("Cars could not be queried");
         } else {
           int numCars = (int) result;
           System.out.println("Number of cars at this location: " + numCars);
@@ -534,6 +574,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -548,6 +591,8 @@ public class TCPClient extends Client {
         } else if (result instanceof InvalidTransactionException) {
           System.out.println("Rooms could not be queried");
           System.out.println(((Exception) result).getMessage());
+        } else if (result instanceof Boolean) {
+          System.out.println("Rooms could not be queried");
         } else {
           int numRoom = (int) result;
           System.out.println("Number of rooms at this location: " + numRoom);
@@ -569,6 +614,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -583,6 +631,8 @@ public class TCPClient extends Client {
         } else if (result instanceof InvalidTransactionException) {
           System.out.println("Customer could not be queried");
           System.out.println(((Exception) result).getMessage());
+        } else if (result instanceof Boolean) {
+          System.out.println("Customer could not be queried");
         } else {
           String bill = (String) result;
           System.out.print(bill);
@@ -604,6 +654,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -618,6 +671,8 @@ public class TCPClient extends Client {
         } else if (result instanceof InvalidTransactionException) {
           System.out.println("Flight could not be queried");
           System.out.println(((Exception) result).getMessage());
+        } else if (result instanceof Boolean) {
+          System.out.println("Flight could not be queried");
         } else {
           int price = (int) result;
           System.out.println("Price of a seat: " + price);
@@ -639,6 +694,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -653,6 +711,8 @@ public class TCPClient extends Client {
         } else if (result instanceof InvalidTransactionException) {
           System.out.println("Cars could not be queried");
           System.out.println(((Exception) result).getMessage());
+        } else if (result instanceof Boolean) {
+          System.out.println("Cars could not be queried");
         } else {
           int price = (int) result;
           System.out.println("Price of cars at this location: " + price);
@@ -674,6 +734,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -688,6 +751,8 @@ public class TCPClient extends Client {
         } else if (result instanceof InvalidTransactionException) {
           System.out.println("Rooms could not be queried");
           System.out.println(((Exception) result).getMessage());
+        } else if (result instanceof Boolean) {
+          System.out.println("Rooms could not be queried");
         } else {
           int price = (int) result;
           System.out.println("Price of rooms at this location: " + price);
@@ -710,6 +775,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -748,6 +816,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -786,6 +857,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -876,6 +950,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -883,9 +960,14 @@ public class TCPClient extends Client {
       }, executor);
 
       try {
-        int xid = (Integer) future.get();
-        this.xid = xid;
-        System.out.println("Transaction id: " + xid);
+        Object result = future.get();
+        if (result instanceof Boolean) {
+          System.out.println("Transaction could not be started");
+        } else {
+          this.xid = (int) result;
+          System.out.println("Transaction id: " + xid);
+        }
+      } catch (ExecutionException e) {
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -903,6 +985,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -938,6 +1023,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -946,10 +1034,10 @@ public class TCPClient extends Client {
 
       try {
         Object result = future.get();
-       if (result instanceof InvalidTransactionException) {
-        System.out.println("Transaction could not be aborted");
-        System.out.println(((Exception) result).getMessage());
-       } else if ((boolean) result) {
+        if (result instanceof InvalidTransactionException) {
+          System.out.println("Transaction could not be aborted");
+          System.out.println(((Exception) result).getMessage());
+        } else if ((boolean) result) {
           System.out.println("Transaction was aborted");
         } else {
           System.out.println("Transaction could not be aborted");
@@ -970,6 +1058,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -991,7 +1082,7 @@ public class TCPClient extends Client {
     case crashResourceManager: {
       checkArgumentsCount(3, arguments.size());
 
-      System.out.println("Enabling crash mode [mode=" + arguments.elementAt(2) + "] at resource manager [rm=" 
+      System.out.println("Enabling crash mode [mode=" + arguments.elementAt(2) + "] at resource manager [rm="
           + arguments.elementAt(1) + "]");
 
       final String[] args = arguments.toArray(new String[arguments.size()]);
@@ -1000,6 +1091,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -1029,6 +1123,9 @@ public class TCPClient extends Client {
         try {
           oos.writeObject(packagedCommand);
           return ois.readObject();
+        } catch (EOFException | SocketException e) {
+          reconnect();
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -1053,6 +1150,22 @@ public class TCPClient extends Client {
       System.out.println("Quitting client");
       System.exit(0);
     }
+  }
+
+  public void reconnect() {
+    System.out.println("Connection lost. Reconnecting...");
+
+    Socket s = null;
+    do {
+      try {
+        s = new Socket(s_serverHost, s_serverPort);
+        this.oos = new ObjectOutputStream(s.getOutputStream());
+        this.ois = new ObjectInputStream(s.getInputStream());
+      } catch (IOException e1) {
+        continue; // go again
+      }
+    } while (s == null || !s.isConnected());
+    System.out.println("Reconnected. Please run the failed command again.");
   }
 
   public void execute(UserCommand uc) throws NumberFormatException, RemoteException {
