@@ -87,26 +87,32 @@ public class TransactionManager {
     crash(1);
 
     boolean prepare_to_commit = true;
+    int yesVotes = 0;
     for (String rm : transaction.resourceManagersList) {
       CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
-        return this.middleware.prepare(socket, transactionId, rm);
+        return middleware.prepare(socket, transactionId, rm);
       }, executor);
 
       crash(2);
 
       try {
         boolean vote = (Boolean) future.get(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
+        // Consensus required. One No vote is enough to veto
+        if (vote) yesVotes++;
+        else yesVotes = 0;
+        
         crash(3);
         prepare_to_commit &= vote;
       } catch (InterruptedException | ExecutionException e) {
         e.printStackTrace();
       } catch (TimeoutException e) {
         prepare_to_commit = false;
+        yesVotes = 0;
       }
     }
     crash(4);
 
-    if (prepare_to_commit) {
+    if (prepare_to_commit && yesVotes > 0) {
       Trace.info("TM::prepare() decided to COMMIT");
       log.write("TM\t" + transactionId + "\tCOMMIT");
       crash(5);
