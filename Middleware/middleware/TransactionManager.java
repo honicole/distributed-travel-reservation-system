@@ -24,7 +24,7 @@ import exceptions.TransactionAbortedException;
 
 public class TransactionManager {
   private static final long TIMEOUT = 60000;
-  private static final long RESPONSE_TIMEOUT = 5000;
+  private static final long RESPONSE_TIMEOUT = 10000;
   private int xid;
   private Map<Integer, Transaction> transactions;
   private Map<Integer, Timer> time_to_live;
@@ -92,23 +92,32 @@ public class TransactionManager {
 
     boolean prepare_to_commit = true;
     int yesVotes = 0;
-    
+
     for (String rm : transaction.resourceManagersList) {
       CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
+        new Timer().schedule(new TimerTask() {
+          @Override
+          public void run() {
+            crash(2);
+          }
+        }, 50);
         return middleware.prepare(socket, transactionId, rm);
       }, executor);
-    
-      crash(2);
-      
+
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e1) {
+        e1.printStackTrace();
+      }
+
       try {
         boolean vote = (Boolean) future.get(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
+        crash(3);
         // Consensus required. One No vote is enough to veto
         if (vote)
           yesVotes++;
         else
           yesVotes = 0;
-
-        crash(3);
         prepare_to_commit &= vote;
       } catch (InterruptedException | ExecutionException e) {
         e.printStackTrace();
@@ -151,12 +160,23 @@ public class TransactionManager {
     setStatus(transactionId, Status.COMMITTING);
     for (String rm : transaction.resourceManagersList) {
       CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
+        new Timer().schedule(new TimerTask() {
+          @Override
+          public void run() {
+            crash(6);
+          }
+        }, 50);
         return this.middleware.commit(socket, transactionId, rm);
       }, executor);
 
       try {
+        Thread.sleep(100);
+      } catch (InterruptedException e1) {
+        e1.printStackTrace();
+      }
+
+      try {
         committed &= (Boolean) future.get();
-        crash(6);
       } catch (InterruptedException | ExecutionException e) {
         e.printStackTrace();
       }
@@ -262,7 +282,7 @@ public class TransactionManager {
       time_to_live.put(id, timer);
     }
   }
-  
+
   public void resetTimeToLive(int id) {
     if (transactions.containsKey(id)) {
       if (time_to_live.containsKey(id)) {
@@ -274,14 +294,14 @@ public class TransactionManager {
         @Override
         public void run() {
           if (transactions.containsKey(id) && transactions.get(id).status == Status.ACTIVE) {
-//            try {
-//              //abort(socket, id);
-//              // abort(id);
-//            } catch (InvalidTransactionException e) {
-//              e.printStackTrace();
-//            } catch (RemoteException e) {
-//              e.printStackTrace();
-//            }
+            // try {
+            // //abort(socket, id);
+            // // abort(id);
+            // } catch (InvalidTransactionException e) {
+            // e.printStackTrace();
+            // } catch (RemoteException e) {
+            // e.printStackTrace();
+            // }
             setStatus(id, Status.TIME_OUT);
             Trace.info("TM::resetTimeToLive(" + id + ") Transaction timed out.");
           } else {
@@ -305,7 +325,8 @@ public class TransactionManager {
   }
 
   /**
-   * Crashes the transaction manager by calling {@code System.exit(1);} if the crash mode is set to the given mode
+   * Crashes the transaction manager by calling {@code System.exit(1);} if the
+   * crash mode is set to the given mode
    * 
    * @param mode
    */
@@ -351,10 +372,10 @@ public class TransactionManager {
         switch (transaction.status) {
         case ACTIVE:
           resetTimeToLive(xid);
-//        case PREPARING_COMMIT:
-//          prepare(xid);
-//        case ABORTED:
-//          abort(xid);
+          // case PREPARING_COMMIT:
+          // prepare(xid);
+          // case ABORTED:
+          // abort(xid);
         case ABORTING:
           // call abort on all servers
         case COMMITTING:

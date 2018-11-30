@@ -406,6 +406,10 @@ public class ResourceManager implements IResourceManager {
 
   public boolean prepare(int xid)
       throws RemoteException, TransactionAbortedException, InvalidTransactionException, DeadlockException {
+    Trace.info("RM::prepare(" + xid + ") received vote request");
+    log.write("RM-" + getName() + "\t" + xid + "\tRECEIVED_VOTE_REQ");
+    transaction_file.save(write_list);
+    
     crash(1);
 
     if (write_list.get(xid) != null && write_list.get(xid).isEmpty()) {

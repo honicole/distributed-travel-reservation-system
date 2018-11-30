@@ -500,49 +500,51 @@ public class TCPMiddleware extends Middleware {
                   }
                   result = customer_bill;
                   break;
-//                case "Bundle":
-//                  // TODO: check that all are available before reserving
-//
-//                  /**
-//                   * try to get all the locks on RM level, eg flight id
-//                   * 
-//                   * if false: abort, then release
-//                   */
-//                  lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
-//                  String xid = req.get(1);
-//                  String cid = req.get(2);
-//                  String location = req.get(args.length - 3);
-//                  boolean reserved = true;
-//                  String[] bundle_args;
-//                  UserCommand command;
-//                  server = s_serverHosts[0];
-//                  TM.addResourceManager(transactionId, server);
-//                  for (int i = 3; i < args.length - 3; i++) {
-//                    bundle_args = new String[] { "ReserveFlight", xid, cid, req.get(i) };
-//                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
-//                    sockets_out.get(clientSocket).get(server).writeObject(command);
-//                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
-//                  }
-//
-//                  if (Boolean.valueOf(req.get(args.length - 2))) {
-//                    server = s_serverHosts[1];
-//                    TM.addResourceManager(transactionId, server);
-//                    bundle_args = new String[] { "ReserveCar", xid, cid, location };
-//                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
-//                    sockets_out.get(clientSocket).get(server).writeObject(command);
-//                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
-//                  }
-//
-//                  if (Boolean.valueOf(req.get(args.length - 1))) {
-//                    server = s_serverHosts[2];
-//                    TM.addResourceManager(transactionId, server);
-//                    bundle_args = new String[] { "ReserveRoom", xid, cid, location };
-//                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
-//                    sockets_out.get(clientSocket).get(server).writeObject(command);
-//                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
-//                  }
-//                  result = reserved;
-//                  break;
+                case "Bundle":
+                  lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
+                  String xid = req.get(1);
+                  String cid = req.get(2);
+                  String location = req.get(args.length - 3);
+                  boolean reserved = true;
+                  String[] bundle_args;
+                  UserCommand command;
+                  for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+                    if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[0]))
+                      s_socket = socket;
+                  }
+                  TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
+                  for (int i = 3; i < args.length - 3; i++) {
+                    bundle_args = new String[] { "ReserveFlight", xid, cid, req.get(i) };
+                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
+                    sockets_out.get(clientSocket).get(s_socket).writeObject(command);
+                    reserved &= (Boolean) sockets_in.get(clientSocket).get(s_socket).readObject();
+                  }
+
+                  if (Boolean.valueOf(req.get(args.length - 2))) {
+                    for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+                      if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[1]))
+                        s_socket = socket;
+                    }
+                    TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
+                    bundle_args = new String[] { "ReserveCar", xid, cid, location };
+                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
+                    sockets_out.get(clientSocket).get(s_socket).writeObject(command);
+                    reserved &= (Boolean) sockets_in.get(clientSocket).get(s_socket).readObject();
+                  }
+
+                  if (Boolean.valueOf(req.get(args.length - 1))) {
+                    for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+                      if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[2]))
+                        s_socket = socket;
+                    }
+                    TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
+                    bundle_args = new String[] { "ReserveRoom", xid, cid, location };
+                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
+                    sockets_out.get(clientSocket).get(s_socket).writeObject(command);
+                    reserved &= (Boolean) sockets_in.get(clientSocket).get(s_socket).readObject();
+                  }
+                  result = reserved;
+                  break;
                 case "start":
                   result = (int) TM.start();
                   break;
