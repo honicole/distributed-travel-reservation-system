@@ -622,8 +622,6 @@ public class TCPMiddleware extends Middleware {
             sockets_in.get(clientSocket).put(s, new ObjectInputStream(s.getInputStream()));
             sockets_out.get(clientSocket).remove(s_socket);
             sockets_in.get(clientSocket).remove(s_socket);
-            
-            resetRmSockets();
           } catch (IOException e1) {
             continue; // go again
           }
