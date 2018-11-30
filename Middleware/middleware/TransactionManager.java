@@ -92,13 +92,20 @@ public class TransactionManager {
 
     boolean prepare_to_commit = true;
     int yesVotes = 0;
+    
+    CompletableFuture<?>[] futures = new CompletableFuture[3];
+    
+    int i = 0;
     for (String rm : transaction.resourceManagersList) {
-      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
+      futures[i] = CompletableFuture.supplyAsync(() -> {
         return middleware.prepare(socket, transactionId, rm);
       }, executor);
-
-      crash(2);
-
+      i++;
+    }
+    
+    crash(2);
+    
+    for (CompletableFuture<?> future : futures) {
       try {
         boolean vote = (Boolean) future.get(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
         // Consensus required. One No vote is enough to veto
