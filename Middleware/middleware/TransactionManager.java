@@ -57,7 +57,7 @@ public class TransactionManager {
   }
 
   public enum Status {
-    ACTIVE, PREPARING_COMMIT, COMMITTED, ABORTED, TIME_OUT, INVALID
+    ACTIVE, PREPARING_COMMIT, COMMITTING, COMMITTED, ABORTING, ABORTED, TIME_OUT, INVALID
   }
 
   private static class Transaction implements Serializable {
@@ -147,7 +147,7 @@ public class TransactionManager {
     }
 
     boolean committed = true;
-    setStatus(transactionId, Status.COMMITTED);
+    setStatus(transactionId, Status.COMMITTING);
     for (String rm : transaction.resourceManagersList) {
       CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
         return this.middleware.commit(socket, transactionId, rm);
@@ -162,6 +162,7 @@ public class TransactionManager {
     }
     crash(7);
 
+    setStatus(transactionId, Status.COMMITTED);
     Trace.info("TM::commit(" + transactionId + ") Transaction committed");
     return true;
   }
@@ -177,7 +178,7 @@ public class TransactionManager {
       throw new InvalidTransactionException("Cannot abort the transaction.");
     }
 
-    setStatus(transactionId, Status.ABORTED);
+    setStatus(transactionId, Status.ABORTING);
 
     HashSet<String> abortList = transaction.resourceManagersList;
     if (!transaction.prepareToCommitList.isEmpty()) {
@@ -187,6 +188,7 @@ public class TransactionManager {
       this.middleware.abort(socket, transactionId, rm);
     }
 
+    setStatus(transactionId, Status.ABORTED);
     Trace.info("TM::abort(" + transactionId + ") Transaction aborted");
     return true;
   }
