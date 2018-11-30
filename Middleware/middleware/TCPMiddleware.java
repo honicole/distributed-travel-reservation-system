@@ -27,7 +27,6 @@ import static Client.Command.*;
 import Client.UserCommand;
 import Server.LockManager.LockManager;
 import Server.LockManager.TransactionLockObject;
-import Server.Common.RMItem;
 import Server.Common.Trace;
 import Server.LockManager.DeadlockException;
 import exceptions.InvalidTransactionException;
@@ -51,8 +50,6 @@ public class TCPMiddleware extends Middleware {
   private static StringBuilder log = new StringBuilder();
   private static int counter = 0;
   private static LockManager lockManager;
-  protected Map<Integer, List<String>> write_list = new HashMap<>();
-  protected Map<Integer, Map<String, RMItem>> pre_image = new HashMap<>();
 
   private TCPMiddleware() {
   }
@@ -104,6 +101,7 @@ public class TCPMiddleware extends Middleware {
     TM = new TransactionManager(getListener());
 
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
+      TCPMiddleware middleware = new TCPMiddleware(args);
       while (true) {
         Socket clientSocket = serverSocket.accept();
         listener.onNewConnection(clientSocket);
@@ -143,7 +141,7 @@ public class TCPMiddleware extends Middleware {
             }
             sockets_out.get(clientSocket).get(s_socket).writeObject(req);
             result = sockets_in.get(clientSocket).get(s_socket).readObject();
-          } catch (SocketException e) {
+          } catch (SocketException | EOFException e) {
             reconnect(clientSocket);
             return false;
           } catch (Exception e) {
@@ -180,7 +178,7 @@ public class TCPMiddleware extends Middleware {
           }
           sockets_out.get(clientSocket).get(s_socket).writeObject(req);
           result = sockets_in.get(clientSocket).get(s_socket).readObject();
-        } catch (SocketException e) {
+        } catch (SocketException| EOFException e) {
           reconnect(clientSocket);
           return false;
         } catch (Exception e) {
@@ -212,7 +210,7 @@ public class TCPMiddleware extends Middleware {
             }
           }
           sockets_out.get(clientSocket).get(s_socket).writeObject(req);
-        } catch (SocketException e) {
+        } catch (SocketException| EOFException e) {
           reconnect(clientSocket);
           return false;
         } catch (Exception e) {
@@ -294,7 +292,7 @@ public class TCPMiddleware extends Middleware {
                 case "QueryFlight":
                 case "QueryFlightPrice":
                   for (Socket socket : sockets_out.get(clientSocket).keySet()) {
-                    if (socket.getInetAddress().equals(InetAddress.getByName(s_serverHosts[0])))
+                    if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[0]))
                       s_socket = socket;
                   }
                   TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
@@ -308,7 +306,7 @@ public class TCPMiddleware extends Middleware {
                 case "QueryCars":
                 case "QueryCarsPrice":
                   for (Socket socket : sockets_out.get(clientSocket).keySet()) {
-                    if (socket.getInetAddress().equals(InetAddress.getByName(s_serverHosts[1])))
+                    if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[1]))
                       s_socket = socket;
                   }
                   TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
@@ -322,7 +320,7 @@ public class TCPMiddleware extends Middleware {
                 case "QueryRooms":
                 case "QueryRoomsPrice":
                   for (Socket socket : sockets_out.get(clientSocket).keySet()) {
-                    if (socket.getInetAddress().equals(InetAddress.getByName(s_serverHosts[2])))
+                    if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[2]))
                       s_socket = socket;
                   }
                   TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
@@ -461,7 +459,7 @@ public class TCPMiddleware extends Middleware {
               } catch (DeadlockException e) {
                 result = e;
               } catch (InvalidTransactionException e) {
-              } catch (SocketException e) {
+              } catch (SocketException| EOFException e) {
                 reconnect(clientSocket);
                 return false;
               } catch (Exception e) {

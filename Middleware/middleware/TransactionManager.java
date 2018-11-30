@@ -178,8 +178,7 @@ public class TransactionManager {
     }
 
     setStatus(transactionId, Status.ABORTED);
-    
-    
+
     HashSet<String> abortList = transaction.resourceManagersList;
     if (!transaction.prepareToCommitList.isEmpty()) {
       abortList = transaction.prepareToCommitList;
@@ -258,6 +257,37 @@ public class TransactionManager {
       time_to_live.put(id, timer);
     }
   }
+  
+  public void resetTimeToLive(int id) {
+    if (transactions.containsKey(id)) {
+      if (time_to_live.containsKey(id)) {
+        time_to_live.get(id).cancel();
+      }
+
+      Timer timer = new Timer();
+      timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+          if (transactions.containsKey(id) && transactions.get(id).status == Status.ACTIVE) {
+//            try {
+//              //abort(socket, id);
+//              // abort(id);
+//            } catch (InvalidTransactionException e) {
+//              e.printStackTrace();
+//            } catch (RemoteException e) {
+//              e.printStackTrace();
+//            }
+            setStatus(id, Status.TIME_OUT);
+            Trace.info("TM::resetTimeToLive(" + id + ") Transaction timed out.");
+          } else {
+            time_to_live.remove(id);
+          }
+        }
+      }, TIMEOUT);
+      time_to_live.put(id, timer);
+      Trace.info("TM::resetTimeToLive(" + id + ") resetting time to live.");
+    }
+  }
 
   public boolean resetCrashes() throws RemoteException {
     Trace.info("Resetting middleware crash mode");
@@ -303,9 +333,27 @@ public class TransactionManager {
     if (load_transactions_from_file != null) {
       Trace.info("RM::initializeFiles() loaded transactions from file");
       transactions = load_transactions_from_file;
+      continueTransactions();
     } else {
       transaction_file.save(transactions);
       Trace.info("RM::initializeFiles() initialized transactions file");
+    }
+  }
+
+  private void continueTransactions() {
+    try {
+      transactions.forEach((xid, transaction) -> {
+        switch (transaction.status) {
+        case ACTIVE:
+          resetTimeToLive(xid);
+//        case PREPARING_COMMIT:
+//          prepare(xid);
+//        case ABORTED:
+//          abort(xid);
+        }
+      });
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 }
