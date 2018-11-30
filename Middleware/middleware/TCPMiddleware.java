@@ -42,7 +42,7 @@ public class TCPMiddleware extends Middleware {
   /**
    * Maps each RM socket to an input stream and an output stream.
    */
-  private Map<Socket, List<?>> rmSockets;
+  //private Map<Socket, List<?>> rmSockets;
   private Executor executor = Executors.newFixedThreadPool(8);
   private static MiddlewareListener listener;
   private static TransactionManager TM;
@@ -70,7 +70,7 @@ public class TCPMiddleware extends Middleware {
     s_serverPorts = new int[] { Integer.valueOf(args[2]), Integer.valueOf(args[4]), Integer.valueOf(args[6]) };
     lockManager = new LockManager();
     
-    resetRmSockets();
+    //resetRmSockets();
   }
 
   public static void main(String[] args) {
@@ -128,20 +128,20 @@ public class TCPMiddleware extends Middleware {
     return TCPMiddleware.listener;
   }
   
-  @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
-  private void resetRmSockets() throws UnknownHostException, IOException {
-    rmSockets = new HashMap<Socket, List<?>>();
-    Socket s, t, u;
-    rmSockets.put(s = new Socket(s_serverHosts[0], s_serverPorts[0]), new ArrayList() {{ 
-      add(new ObjectOutputStream(s.getOutputStream())); add(new ObjectInputStream(s.getInputStream()));
-    }});
-    rmSockets.put(t = new Socket(s_serverHosts[1], s_serverPorts[1]), new ArrayList() {{ 
-      add(new ObjectOutputStream(t.getOutputStream())); add(new ObjectInputStream(t.getInputStream()));
-    }});
-    rmSockets.put(u = new Socket(s_serverHosts[2], s_serverPorts[2]), new ArrayList() {{ 
-      add(new ObjectOutputStream(u.getOutputStream())); add(new ObjectInputStream(u.getInputStream()));
-    }});
-  }
+//  @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
+//  private void resetRmSockets() throws UnknownHostException, IOException {
+//    rmSockets = new HashMap<Socket, List<?>>();
+//    Socket s, t, u;
+//    rmSockets.put(s = new Socket(s_serverHosts[0], s_serverPorts[0]), new ArrayList() {{ 
+//      add(new ObjectOutputStream(s.getOutputStream())); add(new ObjectInputStream(s.getInputStream()));
+//    }});
+//    rmSockets.put(t = new Socket(s_serverHosts[1], s_serverPorts[1]), new ArrayList() {{ 
+//      add(new ObjectOutputStream(t.getOutputStream())); add(new ObjectInputStream(t.getInputStream()));
+//    }});
+//    rmSockets.put(u = new Socket(s_serverHosts[2], s_serverPorts[2]), new ArrayList() {{ 
+//      add(new ObjectOutputStream(u.getOutputStream())); add(new ObjectInputStream(u.getInputStream()));
+//    }});
+//  }
 
   class MiddlewareListenerImpl implements MiddlewareListener {
 
@@ -188,45 +188,45 @@ public class TCPMiddleware extends Middleware {
       return prepare_to_commit;
     }
     
-    public boolean prepare(int transactionId, String rm) {
-      boolean prepare_to_commit = true;
-      
-      for (int i = 0; i < 5; i++) {
-        CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
-          Object result = null;
-          String[] cmd_args = new String[] { "prepare", Integer.toString(transactionId) };
-          UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
-          try {
-            for (Socket socket : rmSockets.keySet()) {
-              if (socket.getInetAddress().toString().equals(rm)) {
-                s_socket = socket;
-              }
-            }
-            ((ObjectOutputStream) rmSockets.get(s_socket).get(0)).writeObject(req);
-            result = ((ObjectInputStream) rmSockets.get(s_socket).get(1)).readObject();
-          } catch (SocketException | EOFException e) {
-            reconnect(s_socket);
-            return false;
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-          return result;
-        }, executor);
-        
-        try {
-          prepare_to_commit |= (Boolean) future.get(5000, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException | ExecutionException e) {
-          e.printStackTrace();
-        } catch (TimeoutException e) {
-          prepare_to_commit |= false;
-        }
-        
-        if (prepare_to_commit)
-          break;
-      }
-      
-      return prepare_to_commit;
-    }
+//    public boolean prepare(int transactionId, String rm) {
+//      boolean prepare_to_commit = true;
+//      
+//      for (int i = 0; i < 5; i++) {
+//        CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
+//          Object result = null;
+//          String[] cmd_args = new String[] { "prepare", Integer.toString(transactionId) };
+//          UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
+//          try {
+//            for (Socket socket : rmSockets.keySet()) {
+//              if (socket.getInetAddress().toString().equals(rm)) {
+//                s_socket = socket;
+//              }
+//            }
+//            ((ObjectOutputStream) rmSockets.get(s_socket).get(0)).writeObject(req);
+//            result = ((ObjectInputStream) rmSockets.get(s_socket).get(1)).readObject();
+//          } catch (SocketException | EOFException e) {
+//            reconnect(s_socket);
+//            return false;
+//          } catch (Exception e) {
+//            e.printStackTrace();
+//          }
+//          return result;
+//        }, executor);
+//        
+//        try {
+//          prepare_to_commit |= (Boolean) future.get(5000, TimeUnit.MILLISECONDS);
+//        } catch (InterruptedException | ExecutionException e) {
+//          e.printStackTrace();
+//        } catch (TimeoutException e) {
+//          prepare_to_commit |= false;
+//        }
+//        
+//        if (prepare_to_commit)
+//          break;
+//      }
+//      
+//      return prepare_to_commit;
+//    }
 
     public boolean commit(Socket clientSocket, int transactionId, String rm) {
       CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
@@ -262,39 +262,39 @@ public class TCPMiddleware extends Middleware {
       return false;
     }
     
-    public boolean commit(int transactionId, String rm) {
-      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
-        Object result = null;
-        String[] cmd_args = new String[] { "commit", Integer.toString(transactionId) };
-        UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
-        try {
-          for (Socket socket : rmSockets.keySet()) {
-            if (socket.getInetAddress().toString().equals(rm)) {
-              s_socket = socket;
-            }
-          }
-          ((ObjectOutputStream) rmSockets.get(s_socket).get(0)).writeObject(req);
-          result = ((ObjectInputStream) rmSockets.get(s_socket).get(1)).readObject();
-        } catch (SocketException | EOFException e) {
-          reconnect(s_socket);
-          return false;
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-        return result;
-      }, executor);
-      
-      try {
-        boolean isCommitted = (Boolean) future.get();
-        if (isCommitted) {
-          lockManager.UnlockAll(transactionId);
-          return isCommitted;
-        }
-      } catch (InterruptedException | ExecutionException e) {
-        e.printStackTrace();
-      }
-      return false;
-    }
+//    public boolean commit(int transactionId, String rm) {
+//      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
+//        Object result = null;
+//        String[] cmd_args = new String[] { "commit", Integer.toString(transactionId) };
+//        UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
+//        try {
+//          for (Socket socket : rmSockets.keySet()) {
+//            if (socket.getInetAddress().toString().equals(rm)) {
+//              s_socket = socket;
+//            }
+//          }
+//          ((ObjectOutputStream) rmSockets.get(s_socket).get(0)).writeObject(req);
+//          result = ((ObjectInputStream) rmSockets.get(s_socket).get(1)).readObject();
+//        } catch (SocketException | EOFException e) {
+//          reconnect(s_socket);
+//          return false;
+//        } catch (Exception e) {
+//          e.printStackTrace();
+//        }
+//        return result;
+//      }, executor);
+//      
+//      try {
+//        boolean isCommitted = (Boolean) future.get();
+//        if (isCommitted) {
+//          lockManager.UnlockAll(transactionId);
+//          return isCommitted;
+//        }
+//      } catch (InterruptedException | ExecutionException e) {
+//        e.printStackTrace();
+//      }
+//      return false;
+//    }
 
     public void abort(Socket clientSocket, int transactionId, String rm) {
       CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
@@ -318,27 +318,27 @@ public class TCPMiddleware extends Middleware {
       }, executor);
     }
     
-    public void abort(int transactionId, String rm) {
-      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
-        String[] cmd_args = new String[] { "abort", Integer.toString(transactionId) };
-        UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
-        try {
-          for (Socket socket : rmSockets.keySet()) {
-            if (socket.getInetAddress().toString().equals(rm)) {
-              s_socket = socket;
-            }
-          }
-          ((ObjectOutputStream) rmSockets.get(s_socket).get(0)).writeObject(req);
-        } catch (SocketException | EOFException e) {
-          reconnect(s_socket);
-          return false;
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-        lockManager.UnlockAll(transactionId);
-        return true;
-      }, executor);
-    }
+//    public void abort(int transactionId, String rm) {
+//      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
+//        String[] cmd_args = new String[] { "abort", Integer.toString(transactionId) };
+//        UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
+//        try {
+//          for (Socket socket : rmSockets.keySet()) {
+//            if (socket.getInetAddress().toString().equals(rm)) {
+//              s_socket = socket;
+//            }
+//          }
+//          ((ObjectOutputStream) rmSockets.get(s_socket).get(0)).writeObject(req);
+//        } catch (SocketException | EOFException e) {
+//          reconnect(s_socket);
+//          return false;
+//        } catch (Exception e) {
+//          e.printStackTrace();
+//        }
+//        lockManager.UnlockAll(transactionId);
+//        return true;
+//      }, executor);
+//    }
     
     @Override
     public void onNewConnection(Socket clientSocket) throws DeadlockException {
@@ -612,11 +612,11 @@ public class TCPMiddleware extends Middleware {
           try {
             s = new Socket(s_socket.getInetAddress(), s_socket.getPort());
             
-            Socket t;
-            rmSockets.put(t = new Socket(s_socket.getInetAddress(), s_socket.getPort()), new ArrayList() {{ 
-              add(new ObjectOutputStream(t.getOutputStream())); add(new ObjectInputStream(t.getInputStream()));
-            }});
-            rmSockets.remove(s_socket);
+//            Socket t;
+//            rmSockets.put(t = new Socket(s_socket.getInetAddress(), s_socket.getPort()), new ArrayList() {{ 
+//              add(new ObjectOutputStream(t.getOutputStream())); add(new ObjectInputStream(t.getInputStream()));
+//            }});
+//            rmSockets.remove(s_socket);
             
             sockets_out.get(clientSocket).put(s, new ObjectOutputStream(s.getOutputStream()));
             sockets_in.get(clientSocket).put(s, new ObjectInputStream(s.getInputStream()));
