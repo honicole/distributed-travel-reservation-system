@@ -26,7 +26,7 @@ public class TCPResourceManager extends ResourceManager {
 
   private Executor executor = Executors.newFixedThreadPool(8);
   private ResourceManagerListener listener;
-  
+
   /**
    * Set this to {@code true} only when performing performance analysis
    */
@@ -35,23 +35,13 @@ public class TCPResourceManager extends ResourceManager {
   private static File logFile;
   private static StringBuilder log = new StringBuilder();
   private static int counter = 0;
-  //@formatter:off
-  /** <pre>{@code Crash mode based on an int as follows:
-    1. Crash after receive vote request but before sending answer
-    2. Crash after deciding which answer to send (commit/abort)
-    3. Crash after sending answer
-    4. Crash after receiving decision but before committing/aborting
-    5. Crash during recovery}</pre>
-   */
-  private int crashMode;
-  //@formatter:on
 
   public TCPResourceManager(String name) {
     super(name);
   }
 
   public static void main(String[] args) {
-    
+
     if (args.length > 0) {
       s_serverPort = Integer.valueOf(args[0]);
     }
@@ -60,7 +50,7 @@ public class TCPResourceManager extends ResourceManager {
     if (System.getSecurityManager() == null) {
       System.setSecurityManager(new SecurityManager());
     }
-    
+
     if (LOG_PERFORMANCE) {
       String timestamp = Long.toString(System.currentTimeMillis());
       FILENAME = "log-" + timestamp + ".txt";
@@ -68,16 +58,18 @@ public class TCPResourceManager extends ResourceManager {
       if (!logFile.exists()) {
         try {
           logFile.createNewFile();
-        } catch (IOException e) {}
+        } catch (IOException e) {
+        }
       }
-      
+
       // Write log to disk on Ctrl-C
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         try {
           BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME));
           writer.write(log.toString());
           writer.close();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
       }));
     }
 
@@ -106,7 +98,7 @@ public class TCPResourceManager extends ResourceManager {
     TCPResourceManager rm = new TCPResourceManager(args[0]);
     rm.setListener(rm.new ResourceManagerListenerImpl());
     System.out.println(rm.m_name + " resource manager successfully called! :)"); // FIXME Prints 1044 RM called
-    
+
     try (ServerSocket serverSocket = new ServerSocket(s_serverPort);) {
       while (true) {
         Socket clientSocket = serverSocket.accept();
@@ -121,52 +113,6 @@ public class TCPResourceManager extends ResourceManager {
   public void setListener(ResourceManagerListener listener) {
     this.listener = listener;
   }
-  
-  public boolean resetCrashes() throws RemoteException {
-    Trace.info("Resetting crash mode of " + m_name);
-    crashMode = 0;
-    return true;
-  }
-  
-  /**
-   * Sets the crash mode of the specified resource manager.
-   * 
-   * @param name Name of the resource manager
-   * @param mode
-   * @throws RemoteException
-   */
-  public boolean crashResourceManager(String name, int mode) throws RemoteException {
-    if (m_name.equals(name)) { 
-      Trace.info("Setting crash mode of " + name + " to " + mode);
-      setCrashMode(mode);
-    }
-    return true;
-  }
-  
-  /**
-   * Crashes the transaction manager by calling {@code System.exit(1);} if the crash mode is set to the given mode
-   * @param mode
-   */
-  private void crash(int mode) {
-    if (crashMode == mode) {
-      Trace.info(m_name + " crashed in mode " + mode + "!");
-      System.exit(1);
-    }
-  }
-
-  /**
-   * @return the crashMode
-   */
-  public int getCrashMode() {
-    return crashMode;
-  }
-
-  /**
-   * @param crashMode the crashMode to set
-   */
-  public void setCrashMode(int crashMode) {
-    this.crashMode = crashMode;
-  }
 
   class ResourceManagerListenerImpl implements ResourceManagerListener {
 
@@ -176,7 +122,7 @@ public class TCPResourceManager extends ResourceManager {
         try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());) {
           System.out.println("Connected");
-          
+
           final UserCommand[] fromClient = new UserCommand[1];
           while ((fromClient[0] = (UserCommand) ois.readObject()) != null) {
             long start = System.currentTimeMillis();
@@ -268,11 +214,11 @@ public class TCPResourceManager extends ResourceManager {
                   oos.writeObject(new Boolean(resetCrashes()));
                   break;
                 }
-                
+
                 if (LOG_PERFORMANCE) {
                   log.append(counter + "," + args[1] + "," + (System.currentTimeMillis() - start) + "\n");
                 }
-                
+
                 return true;
               } catch (DeadlockException e) {
                 try {
@@ -305,7 +251,7 @@ public class TCPResourceManager extends ResourceManager {
       };
       executor.execute(r);
     }
-    
+
   }
-  
+
 }

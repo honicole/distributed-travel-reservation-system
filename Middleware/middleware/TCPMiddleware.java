@@ -18,6 +18,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import Client.Command;
 import static Client.Command.*;
@@ -38,7 +40,7 @@ public class TCPMiddleware extends Middleware {
   private Executor executor = Executors.newFixedThreadPool(8);
   private static MiddlewareListener listener;
   private static TransactionManager TM;
-  
+
   /**
    * Set this to {@code true} only when performing performance analysis
    */
@@ -58,7 +60,7 @@ public class TCPMiddleware extends Middleware {
     try {
       this.server = new ServerSocket(Integer.valueOf(args[0]), 1, InetAddress.getLocalHost());
     } catch (NumberFormatException | IOException e) {
-      //e.printStackTrace();
+      // e.printStackTrace();
     }
     s_serverHosts = new String[] { args[1], args[3], args[5] };
     s_serverPorts = new int[] { Integer.valueOf(args[2]), Integer.valueOf(args[4]), Integer.valueOf(args[6]) };
@@ -81,7 +83,8 @@ public class TCPMiddleware extends Middleware {
       if (!logFile.exists()) {
         try {
           logFile.createNewFile();
-        } catch (IOException e) {}
+        } catch (IOException e) {
+        }
       }
 
       // Write log to disk on Ctrl-C
@@ -90,7 +93,8 @@ public class TCPMiddleware extends Middleware {
           BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME));
           writer.write(log.toString());
           writer.close();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
       }));
     }
 
@@ -141,15 +145,17 @@ public class TCPMiddleware extends Middleware {
         }, executor);
 
         try {
-          prepare_to_commit &= (Boolean) future.get();
+          prepare_to_commit |= (Boolean) future.get(1000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException e) {
           e.printStackTrace();
+        } catch (TimeoutException e) {
+          prepare_to_commit |= false;
         }
-        
-        if (!prepare_to_commit)
+
+        if (prepare_to_commit)
           break;
       }
-      
+
       return prepare_to_commit;
     }
 
@@ -375,7 +381,6 @@ public class TCPMiddleware extends Middleware {
                 case "start":
                   result = (int) TM.start();
                   break;
-                case "prepare":
                 case "commit":
                   result = TM.prepare(clientSocket, transactionId);
                   break;
@@ -386,24 +391,22 @@ public class TCPMiddleware extends Middleware {
                   result = TM.setCrashMode(Integer.valueOf(args[1]));
                   break;
                 case "crashResourceManager":
-                  result = false;
-                  for (String s: s_serverHosts) {
+                  for (String s : s_serverHosts) {
                     sockets_out.get(clientSocket).get(s).writeObject(req);
-                    result = (Boolean) result & (Boolean) sockets_in.get(clientSocket).get(s).readObject();
+                    success &= (Boolean) sockets_in.get(clientSocket).get(s).readObject();
                   }
+                  result = success;
                   break;
                 case "resetCrashes":
-                  // Reset the crashes for both the TM and the RMs
-                  result = TM.resetCrashes();
-                  
-                  for (String s: s_serverHosts) {
+                  success &= TM.resetCrashes();
+                  for (String s : s_serverHosts) {
                     Trace.info("Resetting " + s);
                     sockets_out.get(clientSocket).get(s).writeObject(req);
-                    result = (Boolean) result & (Boolean) sockets_in.get(clientSocket).get(s).readObject();
+                    success &= (Boolean) sockets_in.get(clientSocket).get(s).readObject();
                   }
+                  result = success;
                   break;
                 }
-
                 if (LOG_PERFORMANCE) {
                   log.append(counter + "," + req.get(0) + "," + (System.currentTimeMillis() - start) + "\n");
                 }
@@ -414,6 +417,7 @@ public class TCPMiddleware extends Middleware {
               }
               return result;
             }, executor);
+            
             Object result = future.get();
             if (result instanceof DeadlockException) {
               TM.abort(clientSocket, ((DeadlockException) result).getXid());
