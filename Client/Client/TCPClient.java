@@ -1166,7 +1166,7 @@ public class TCPClient extends Client {
         continue; // go again
       }
     } while (s == null || !s.isConnected());
-    System.out.println("Reconnected. Please run the failed command again.");
+    System.out.println("Reconnected.");
   }
 
   public void execute(UserCommand uc) throws NumberFormatException, RemoteException {

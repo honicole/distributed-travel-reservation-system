@@ -178,7 +178,7 @@ public class TCPMiddleware extends Middleware {
           }
           sockets_out.get(clientSocket).get(s_socket).writeObject(req);
           result = sockets_in.get(clientSocket).get(s_socket).readObject();
-        } catch (SocketException| EOFException e) {
+        } catch (SocketException | EOFException e) {
           reconnect(clientSocket);
           return false;
         } catch (Exception e) {
@@ -210,7 +210,7 @@ public class TCPMiddleware extends Middleware {
             }
           }
           sockets_out.get(clientSocket).get(s_socket).writeObject(req);
-        } catch (SocketException| EOFException e) {
+        } catch (SocketException | EOFException e) {
           reconnect(clientSocket);
           return false;
         } catch (Exception e) {
@@ -459,8 +459,10 @@ public class TCPMiddleware extends Middleware {
               } catch (DeadlockException e) {
                 result = e;
               } catch (InvalidTransactionException e) {
-              } catch (SocketException| EOFException e) {
+                e.printStackTrace();
+              } catch (SocketException | EOFException e) {
                 reconnect(clientSocket);
+                e.printStackTrace();
                 return false;
               } catch (Exception e) {
                 e.printStackTrace();
@@ -485,11 +487,7 @@ public class TCPMiddleware extends Middleware {
 
     public void reconnect(Socket clientSocket) {
       System.out.println("Connection lost. Reconnecting...");
-      try {
-        s_socket.close();
-      } catch (IOException e2) {
-      }
-
+      
       CompletableFuture<?> reconnect = CompletableFuture.supplyAsync(() -> {
         Socket s = null;
         do {
@@ -497,12 +495,14 @@ public class TCPMiddleware extends Middleware {
             s = new Socket(s_socket.getInetAddress(), s_socket.getPort());
             sockets_out.get(clientSocket).put(s, new ObjectOutputStream(s.getOutputStream()));
             sockets_in.get(clientSocket).put(s, new ObjectInputStream(s.getInputStream()));
+            sockets_out.get(clientSocket).remove(s_socket);
+            sockets_in.get(clientSocket).remove(s_socket);
           } catch (IOException e1) {
             continue; // go again
           }
         } while (s == null || !s.isConnected());
         return true;
-      }, executor).thenRun(() -> System.out.println("Reconnected. Please run the failed command again."));
+      }, executor).thenRun(() -> System.out.println("Reconnected."));
     }
   }
 
