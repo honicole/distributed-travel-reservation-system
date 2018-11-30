@@ -14,6 +14,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import Server.LockManager.DeadlockException;
+import exceptions.InvalidTransactionException;
 
 public class TCPClient extends Client {
   private static String s_serverHost = "localhost";
@@ -143,6 +144,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Flight could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Flight could not be added");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Flight added");
         } else {
@@ -178,6 +182,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Cars could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Cars could not be added");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Cars added");
         } else {
@@ -213,6 +220,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Rooms could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Rooms could not be added");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Rooms added");
         } else {
@@ -245,7 +255,14 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Customer could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Customer could not be added");
+          System.out.println(((Exception) result).getMessage());
         } else {
+          if (result instanceof Boolean) {
+            System.out.println("Customer could not be added");
+            break;
+          }
           int customer = (int) result;
           System.out.println("Add customer ID: " + customer);
         }
@@ -277,6 +294,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Customer could not be added");
           System.out.println("Deadlock detected -- transaction aborted");
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Customer could not be added");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Add customer ID: " + arguments.elementAt(2));
         } else {
@@ -310,6 +330,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Flight could not be deleted");
           System.out.println("Deadlock detected -- transaction aborted");
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Flight could not be deleted");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Flight Deleted");
         } else {
@@ -343,6 +366,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Cars could not be deleted");
           System.out.println("Deadlock detected -- transaction aborted");
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Cars could not be deleted");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Cars Deleted");
         } else {
@@ -376,6 +402,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Rooms could not be deleted");
           System.out.println("Deadlock detected -- transaction aborted");
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Rooms could not be deleted");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Rooms Deleted");
         } else {
@@ -409,6 +438,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Customer could not be deleted");
           System.out.println("Deadlock detected -- transaction aborted");
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Customer could not be deleted");
+          System.out.println(((Exception) result).getMessage());
           break;
         } else if ((boolean) result) {
           System.out.println("Customer Deleted");
@@ -443,6 +475,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Flight could not be queried");
+          System.out.println(((Exception) result).getMessage());
         } else {
           int seats = (int) result;
           System.out.println("Number of seats available: " + seats);
@@ -475,6 +510,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Cars could not be queried");
+          System.out.println(((Exception) result).getMessage());
         } else {
           int numCars = (int) result;
           System.out.println("Number of cars at this location: " + numCars);
@@ -507,6 +545,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Rooms could not be queried");
+          System.out.println(((Exception) result).getMessage());
         } else {
           int numRoom = (int) result;
           System.out.println("Number of rooms at this location: " + numRoom);
@@ -539,6 +580,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Customer could not be queried");
+          System.out.println(((Exception) result).getMessage());
         } else {
           String bill = (String) result;
           System.out.print(bill);
@@ -571,6 +615,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Flight could not be queried");
+          System.out.println(((Exception) result).getMessage());
         } else {
           int price = (int) result;
           System.out.println("Price of a seat: " + price);
@@ -603,6 +650,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Cars could not be queried");
+          System.out.println(((Exception) result).getMessage());
         } else {
           int price = (int) result;
           System.out.println("Price of cars at this location: " + price);
@@ -635,6 +685,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Rooms could not be queried");
+          System.out.println(((Exception) result).getMessage());
         } else {
           int price = (int) result;
           System.out.println("Price of rooms at this location: " + price);
@@ -669,6 +722,9 @@ public class TCPClient extends Client {
           System.out.println("Flight could not be reserved");
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Flight could not be reserved");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Flight Reserved");
         } else {
@@ -704,6 +760,9 @@ public class TCPClient extends Client {
           System.out.println("Car could not be reserved");
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Car could not be reserved");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Car Reserved");
         } else {
@@ -739,6 +798,9 @@ public class TCPClient extends Client {
           System.out.println("Room could not be reserved");
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Room could not be reserved");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Room Reserved");
         } else {
@@ -790,6 +852,9 @@ public class TCPClient extends Client {
           System.out.println("Bundle could not be reserved");
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Bundle could not be reserved");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Bundle Reserved");
         } else {
@@ -849,6 +914,9 @@ public class TCPClient extends Client {
         if (result instanceof DeadlockException) {
           System.out.println("Deadlock detected -- transaction aborted");
           break;
+        } else if (result instanceof InvalidTransactionException) {
+          System.out.println("Transaction could not be committed");
+          System.out.println(((Exception) result).getMessage());
         } else if ((boolean) result) {
           System.out.println("Transaction was committed");
         } else {
@@ -877,7 +945,11 @@ public class TCPClient extends Client {
       }, executor);
 
       try {
-        if ((Boolean) future.get()) {
+        Object result = future.get();
+       if (result instanceof InvalidTransactionException) {
+        System.out.println("Transaction could not be aborted");
+        System.out.println(((Exception) result).getMessage());
+       } else if ((boolean) result) {
           System.out.println("Transaction was aborted");
         } else {
           System.out.println("Transaction could not be aborted");

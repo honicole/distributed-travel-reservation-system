@@ -226,7 +226,6 @@ public class TCPResourceManager extends ResourceManager {
                 } catch (IOException e1) {
                   e1.printStackTrace();
                 }
-                e.printStackTrace();
 
                 if (LOG_PERFORMANCE) {
                   log.append(counter + ",L," + (System.currentTimeMillis() - start) + "\n");

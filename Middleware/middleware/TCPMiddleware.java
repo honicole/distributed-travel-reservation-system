@@ -7,9 +7,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +32,6 @@ import Server.LockManager.TransactionLockObject;
 import Server.Common.RMItem;
 import Server.Common.Trace;
 import Server.LockManager.DeadlockException;
-import Server.TCP.TCPResourceManager;
 import exceptions.InvalidTransactionException;
 
 public class TCPMiddleware extends Middleware {
@@ -37,6 +39,7 @@ public class TCPMiddleware extends Middleware {
   private static int s_serverPort = 1099;
   private static String[] s_serverHosts;
   private static int[] s_serverPorts;
+  private Socket s_socket;
   private Executor executor = Executors.newFixedThreadPool(8);
   private static MiddlewareListener listener;
   private static TransactionManager TM;
@@ -124,8 +127,8 @@ public class TCPMiddleware extends Middleware {
 
   class MiddlewareListenerImpl implements MiddlewareListener {
 
-    private Map<Socket, Map<String, ObjectOutputStream>> sockets_out = new HashMap<>();
-    private Map<Socket, Map<String, ObjectInputStream>> sockets_in = new HashMap<>();
+    private Map<Socket, Map<Socket, ObjectOutputStream>> sockets_out = new HashMap<>();
+    private Map<Socket, Map<Socket, ObjectInputStream>> sockets_in = new HashMap<>();
 
     public boolean prepare(Socket clientSocket, int transactionId, String rm) {
       boolean prepare_to_commit = true;
@@ -136,8 +139,16 @@ public class TCPMiddleware extends Middleware {
           String[] cmd_args = new String[] { "prepare", Integer.toString(transactionId) };
           UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
           try {
-            sockets_out.get(clientSocket).get(rm).writeObject(req);
-            result = sockets_in.get(clientSocket).get(rm).readObject();
+            for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+              if (socket.getInetAddress().toString().equals(rm)) {
+                s_socket = socket;
+              }
+            }
+            sockets_out.get(clientSocket).get(s_socket).writeObject(req);
+            result = sockets_in.get(clientSocket).get(s_socket).readObject();
+          } catch (SocketException e) {
+            reconnect(clientSocket);
+            return false;
           } catch (Exception e) {
             e.printStackTrace();
           }
@@ -145,7 +156,7 @@ public class TCPMiddleware extends Middleware {
         }, executor);
 
         try {
-          prepare_to_commit |= (Boolean) future.get(1000, TimeUnit.MILLISECONDS);
+          prepare_to_commit |= (Boolean) future.get(5000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException e) {
           e.printStackTrace();
         } catch (TimeoutException e) {
@@ -165,8 +176,16 @@ public class TCPMiddleware extends Middleware {
         String[] cmd_args = new String[] { "commit", Integer.toString(transactionId) };
         UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
         try {
-          sockets_out.get(clientSocket).get(rm).writeObject(req);
-          result = sockets_in.get(clientSocket).get(rm).readObject();
+          for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+            if (socket.getInetAddress().toString().equals(rm)) {
+              s_socket = socket;
+            }
+          }
+          sockets_out.get(clientSocket).get(s_socket).writeObject(req);
+          result = sockets_in.get(clientSocket).get(s_socket).readObject();
+        } catch (SocketException e) {
+          reconnect(clientSocket);
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -190,11 +209,19 @@ public class TCPMiddleware extends Middleware {
         String[] cmd_args = new String[] { "abort", Integer.toString(transactionId) };
         UserCommand req = new UserCommand(Command.fromString(cmd_args[0]), cmd_args);
         try {
-          sockets_out.get(clientSocket).get(rm).writeObject(req);
-          lockManager.UnlockAll(transactionId);
+          for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+            if (socket.getInetAddress().toString().equals(rm)) {
+              s_socket = socket;
+            }
+          }
+          sockets_out.get(clientSocket).get(s_socket).writeObject(req);
+        } catch (SocketException e) {
+          reconnect(clientSocket);
+          return false;
         } catch (Exception e) {
           e.printStackTrace();
         }
+        lockManager.UnlockAll(transactionId);
         return true;
       }, executor);
     }
@@ -206,12 +233,12 @@ public class TCPMiddleware extends Middleware {
             ObjectInputStream client_in = new ObjectInputStream(clientSocket.getInputStream());) {
           System.out.println("Connected to client.");
           try {
-            Map<String, ObjectOutputStream> socket_1 = new HashMap<>();
-            Map<String, ObjectInputStream> socket_2 = new HashMap<>();
+            Map<Socket, ObjectOutputStream> socket_1 = new HashMap<>();
+            Map<Socket, ObjectInputStream> socket_2 = new HashMap<>();
             for (int i = 0; i < s_serverHosts.length; i++) {
               Socket socket = new Socket(InetAddress.getByName(s_serverHosts[i]), s_serverPorts[i]);
-              socket_1.put(s_serverHosts[i], new ObjectOutputStream(socket.getOutputStream()));
-              socket_2.put(s_serverHosts[i], new ObjectInputStream(socket.getInputStream()));
+              socket_1.put(socket, new ObjectOutputStream(socket.getOutputStream()));
+              socket_2.put(socket, new ObjectInputStream(socket.getInputStream()));
             }
             sockets_out.put(clientSocket, socket_1);
             sockets_in.put(clientSocket, socket_2);
@@ -232,25 +259,36 @@ public class TCPMiddleware extends Middleware {
 
                 if (args.length > 1 && !isCrashCommand(cmd)) {
                   transactionId = Integer.valueOf(args[1]);
+                  Exception e;
                   switch (TM.getStatus(transactionId)) {
                   case ACTIVE:
                     TM.resetTimeToLive(clientSocket, transactionId);
                     break;
                   case COMMITTED:
-                    throw new InvalidTransactionException("The transaction was committed.");
+                    e = new InvalidTransactionException("The transaction was already committed");
+                    result = e;
+                    throw e;
                   case ABORTED:
-                    throw new InvalidTransactionException("The transaction was aborted");
+                    e = new InvalidTransactionException("The transaction was already aborted");
+                    result = e;
+                    throw e;
                   case TIME_OUT:
-                    throw new InvalidTransactionException("The transaction timed out.");
+                    e = new InvalidTransactionException("The transaction timed out");
+                    result = e;
+                    throw e;
                   case INVALID:
-                    throw new InvalidTransactionException("The transaction does not exist");
+                    e = new InvalidTransactionException("The transaction does not exist");
+                    result = e;
+                    throw e;
                   default:
-                    throw new InvalidTransactionException("Invalid transaction.");
+                    e = new InvalidTransactionException("Invalid transaction");
+                    result = e;
+                    throw e;
                   }
                 }
 
-                String server;
                 boolean success = true;
+                boolean first = true;
                 switch (cmd.name()) {
                 case "ReserveFlight":
                   lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
@@ -258,10 +296,13 @@ public class TCPMiddleware extends Middleware {
                 case "DeleteFlight":
                 case "QueryFlight":
                 case "QueryFlightPrice":
-                  server = s_serverHosts[0];
-                  TM.addResourceManager(transactionId, server);
-                  sockets_out.get(clientSocket).get(server).writeObject(req);
-                  result = sockets_in.get(clientSocket).get(server).readObject();
+                  for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+                    if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[0]))
+                      s_socket = socket;
+                  }
+                  TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
+                  sockets_out.get(clientSocket).get(s_socket).writeObject(req);
+                  result = sockets_in.get(clientSocket).get(s_socket).readObject();
                   break;
                 case "ReserveCar":
                   lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
@@ -269,10 +310,13 @@ public class TCPMiddleware extends Middleware {
                 case "DeleteCars":
                 case "QueryCars":
                 case "QueryCarsPrice":
-                  server = s_serverHosts[1];
-                  TM.addResourceManager(transactionId, server);
-                  sockets_out.get(clientSocket).get(server).writeObject(req);
-                  result = sockets_in.get(clientSocket).get(server).readObject();
+                  for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+                    if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[1]))
+                      s_socket = socket;
+                  }
+                  TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
+                  sockets_out.get(clientSocket).get(s_socket).writeObject(req);
+                  result = sockets_in.get(clientSocket).get(s_socket).readObject();
                   break;
                 case "ReserveRoom":
                   lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
@@ -280,29 +324,34 @@ public class TCPMiddleware extends Middleware {
                 case "DeleteRooms":
                 case "QueryRooms":
                 case "QueryRoomsPrice":
-                  server = s_serverHosts[2];
-                  TM.addResourceManager(transactionId, server);
-                  sockets_out.get(clientSocket).get(server).writeObject(req);
-                  result = sockets_in.get(clientSocket).get(server).readObject();
+                  for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+                    if (socket.getInetAddress() == InetAddress.getByName(s_serverHosts[2]))
+                      s_socket = socket;
+                  }
+                  TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
+                  sockets_out.get(clientSocket).get(s_socket).writeObject(req);
+                  result = sockets_in.get(clientSocket).get(s_socket).readObject();
                   break;
                 case "AddCustomer":
                   int id = -1;
                   String[] args_with_id;
                   UserCommand req_with_id = null;
-                  for (int i = 0; i < s_serverHosts.length; i++) {
-                    server = s_serverHosts[i];
-                    TM.addResourceManager(transactionId, server);
-                    if (i == 0) {
+                  first = true;
+                  for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+                    s_socket = socket;
+                    TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
+                    if (first) {
                       // If first server, generate customer ID and repackage for subsequent servers
-                      sockets_out.get(clientSocket).get(server).writeObject(req);
-                      id = (int) sockets_in.get(clientSocket).get(server).readObject();
-                      lockManager.Lock(transactionId, Integer.toString(id), TransactionLockObject.LockType.LOCK_WRITE);
+                      sockets_out.get(clientSocket).get(s_socket).writeObject(req);
+                      result = sockets_in.get(clientSocket).get(s_socket).readObject();
+                      id = (int) result;
                       args_with_id = Arrays.copyOf(args, args.length + 1);
                       args_with_id[args_with_id.length - 1] = Integer.toString(id);
                       req_with_id = new UserCommand(Command.fromString("AddCustomerID"), args_with_id);
+                      first = false;
                     } else {
-                      sockets_out.get(clientSocket).get(server).writeObject(req_with_id);
-                      success &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
+                      sockets_out.get(clientSocket).get(s_socket).writeObject(req_with_id);
+                      success &= (Boolean) sockets_in.get(clientSocket).get(s_socket).readObject();
                     }
                   }
                   result = success ? id : -1;
@@ -310,11 +359,11 @@ public class TCPMiddleware extends Middleware {
                 case "AddCustomerID":
                 case "DeleteCustomer":
                   lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
-                  for (String s : s_serverHosts) {
-                    // TODO: IDENTIFY WITH HOST AND PORT!!!!!!!!!
-                    TM.addResourceManager(transactionId, s);
-                    sockets_out.get(clientSocket).get(s).writeObject(req);
-                    success &= (Boolean) sockets_in.get(clientSocket).get(s).readObject();
+                  for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+                    s_socket = socket;
+                    TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
+                    sockets_out.get(clientSocket).get(s_socket).writeObject(req);
+                    success &= (Boolean) sockets_in.get(clientSocket).get(s_socket).readObject();
                   }
                   result = success;
                   break;
@@ -322,62 +371,64 @@ public class TCPMiddleware extends Middleware {
                   lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_READ);
                   String customer_bill = "";
                   String regex = "^Bill for customer [0-9]*\n";
-                  for (int i = 0; i < s_serverHosts.length; i++) {
-                    server = s_serverHosts[i];
-                    TM.addResourceManager(transactionId, server);
-                    sockets_out.get(clientSocket).get(server).writeObject(req);
-                    String bill = (String) sockets_in.get(clientSocket).get(server).readObject();
-                    if (i == 0) {
+                  first = true;
+                  for (Socket socket : sockets_out.get(clientSocket).keySet()) {
+                    s_socket = socket;
+                    TM.addResourceManager(transactionId, s_socket.getInetAddress().toString());
+                    sockets_out.get(clientSocket).get(s_socket).writeObject(req);
+                    String bill = (String) sockets_in.get(clientSocket).get(s_socket).readObject();
+                    if (first) {
                       customer_bill = bill;
+                      first = false;
                     } else {
                       customer_bill += String.join("", bill.replaceFirst(regex, ""));
                     }
                   }
                   result = customer_bill;
                   break;
-                case "Bundle":
-                  // TODO: check that all are available before reserving
-
-                  /**
-                   * try to get all the locks on RM level, eg flight id
-                   * 
-                   * if false: abort, then release
-                   */
-                  lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
-                  String xid = req.get(1);
-                  String cid = req.get(2);
-                  String location = req.get(args.length - 3);
-                  boolean reserved = true;
-                  String[] bundle_args;
-                  UserCommand command;
-                  server = s_serverHosts[0];
-                  TM.addResourceManager(transactionId, server);
-                  for (int i = 3; i < args.length - 3; i++) {
-                    bundle_args = new String[] { "ReserveFlight", xid, cid, req.get(i) };
-                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
-                    sockets_out.get(clientSocket).get(server).writeObject(command);
-                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
-                  }
-
-                  if (Boolean.valueOf(req.get(args.length - 2))) {
-                    server = s_serverHosts[1];
-                    TM.addResourceManager(transactionId, server);
-                    bundle_args = new String[] { "ReserveCar", xid, cid, location };
-                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
-                    sockets_out.get(clientSocket).get(server).writeObject(command);
-                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
-                  }
-
-                  if (Boolean.valueOf(req.get(args.length - 1))) {
-                    server = s_serverHosts[2];
-                    TM.addResourceManager(transactionId, server);
-                    bundle_args = new String[] { "ReserveRoom", xid, cid, location };
-                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
-                    sockets_out.get(clientSocket).get(server).writeObject(command);
-                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
-                  }
-                  result = reserved;
-                  break;
+//                case "Bundle":
+//                  // TODO: check that all are available before reserving
+//
+//                  /**
+//                   * try to get all the locks on RM level, eg flight id
+//                   * 
+//                   * if false: abort, then release
+//                   */
+//                  lockManager.Lock(transactionId, args[2], TransactionLockObject.LockType.LOCK_WRITE);
+//                  String xid = req.get(1);
+//                  String cid = req.get(2);
+//                  String location = req.get(args.length - 3);
+//                  boolean reserved = true;
+//                  String[] bundle_args;
+//                  UserCommand command;
+//                  server = s_serverHosts[0];
+//                  TM.addResourceManager(transactionId, server);
+//                  for (int i = 3; i < args.length - 3; i++) {
+//                    bundle_args = new String[] { "ReserveFlight", xid, cid, req.get(i) };
+//                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
+//                    sockets_out.get(clientSocket).get(server).writeObject(command);
+//                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
+//                  }
+//
+//                  if (Boolean.valueOf(req.get(args.length - 2))) {
+//                    server = s_serverHosts[1];
+//                    TM.addResourceManager(transactionId, server);
+//                    bundle_args = new String[] { "ReserveCar", xid, cid, location };
+//                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
+//                    sockets_out.get(clientSocket).get(server).writeObject(command);
+//                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
+//                  }
+//
+//                  if (Boolean.valueOf(req.get(args.length - 1))) {
+//                    server = s_serverHosts[2];
+//                    TM.addResourceManager(transactionId, server);
+//                    bundle_args = new String[] { "ReserveRoom", xid, cid, location };
+//                    command = new UserCommand(Command.fromString(bundle_args[0]), bundle_args);
+//                    sockets_out.get(clientSocket).get(server).writeObject(command);
+//                    reserved &= (Boolean) sockets_in.get(clientSocket).get(server).readObject();
+//                  }
+//                  result = reserved;
+//                  break;
                 case "start":
                   result = (int) TM.start();
                   break;
@@ -391,8 +442,7 @@ public class TCPMiddleware extends Middleware {
                   result = TM.setCrashMode(Integer.valueOf(args[1]));
                   break;
                 case "crashResourceManager":
-                  result = true;
-                  for (String s: s_serverHosts) {
+                  for (String s : s_serverHosts) {
                     sockets_out.get(clientSocket).get(s).writeObject(req);
                     success &= (Boolean) sockets_in.get(clientSocket).get(s).readObject();
                   }
@@ -413,12 +463,16 @@ public class TCPMiddleware extends Middleware {
                 }
               } catch (DeadlockException e) {
                 result = e;
+              } catch (InvalidTransactionException e) {
+              } catch (SocketException e) {
+                reconnect(clientSocket);
+                return false;
               } catch (Exception e) {
                 e.printStackTrace();
               }
               return result;
             }, executor);
-            
+
             Object result = future.get();
             if (result instanceof DeadlockException) {
               TM.abort(clientSocket, ((DeadlockException) result).getXid());
@@ -434,6 +488,27 @@ public class TCPMiddleware extends Middleware {
       executor.execute(r);
     }
 
+    public void reconnect(Socket clientSocket) {
+      System.out.println("Connection lost. Reconnecting...");
+      try {
+        s_socket.close();
+      } catch (IOException e2) {
+      }
+
+      CompletableFuture<?> reconnect = CompletableFuture.supplyAsync(() -> {
+        Socket s = null;
+        do {
+          try {
+            s = new Socket(s_socket.getInetAddress(), s_socket.getPort());
+            sockets_out.get(clientSocket).put(s, new ObjectOutputStream(s.getOutputStream()));
+            sockets_in.get(clientSocket).put(s, new ObjectInputStream(s.getInputStream()));
+          } catch (IOException e1) {
+            continue; // go again
+          }
+        } while (s == null || !s.isConnected());
+        return true;
+      }, executor).thenRun(() -> System.out.println("Reconnected. Please run the failed command again."));
+    }
   }
 
 }
