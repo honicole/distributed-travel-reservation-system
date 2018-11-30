@@ -151,7 +151,7 @@ public class TCPMiddleware extends Middleware {
         }, executor);
 
         try {
-          prepare_to_commit |= (Boolean) future.get(5000, TimeUnit.MILLISECONDS);
+          prepare_to_commit |= (Boolean) future.get(3000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException e) {
           e.printStackTrace();
         } catch (TimeoutException e) {
@@ -459,10 +459,8 @@ public class TCPMiddleware extends Middleware {
               } catch (DeadlockException e) {
                 result = e;
               } catch (InvalidTransactionException e) {
-                e.printStackTrace();
               } catch (SocketException | EOFException e) {
                 reconnect(clientSocket);
-                e.printStackTrace();
                 return false;
               } catch (Exception e) {
                 e.printStackTrace();

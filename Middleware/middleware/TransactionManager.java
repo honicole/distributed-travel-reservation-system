@@ -24,7 +24,7 @@ import exceptions.TransactionAbortedException;
 
 public class TransactionManager {
   private static final long TIMEOUT = 60000;
-  private static final long RESPONSE_TIMEOUT = 30000;
+  private static final long RESPONSE_TIMEOUT = 5000;
   private int xid;
   private Map<Integer, Transaction> transactions;
   private Map<Integer, Timer> time_to_live;
@@ -162,6 +162,7 @@ public class TransactionManager {
     }
     crash(7);
 
+    transaction_file.save(transactions);
     Trace.info("TM::commit(" + transactionId + ") Transaction committed");
     return true;
   }
@@ -187,6 +188,7 @@ public class TransactionManager {
       this.middleware.abort(socket, transactionId, rm);
     }
 
+    transaction_file.save(transactions);
     Trace.info("TM::abort(" + transactionId + ") Transaction aborted");
     return true;
   }

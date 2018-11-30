@@ -28,6 +28,7 @@ public class ResourceManager implements IResourceManager {
   protected ShadowPage<RMHashMap> file_B;
   protected ShadowPage<MasterRecord> master_record_file;
   protected MasterRecord master_record = new MasterRecord();
+  protected ShadowPage<Map<Integer, Map<String, RMItem>>> transaction_file;
 
   public static Log log = new Log();
   private int crashMode = 0;
@@ -43,6 +44,7 @@ public class ResourceManager implements IResourceManager {
     file_A = new ShadowPage<>(rm, "A");
     file_B = new ShadowPage<>(rm, "B");
     master_record_file = new ShadowPage<>(rm, "master_record");
+    transaction_file = new ShadowPage<>(rm, "transactions");
     initializeFiles();
   }
 
@@ -406,9 +408,10 @@ public class ResourceManager implements IResourceManager {
       throws RemoteException, TransactionAbortedException, InvalidTransactionException, DeadlockException {
     crash(1);
 
-    if (write_list.get(xid).isEmpty()) {
+    if (write_list.get(xid) != null && write_list.get(xid).isEmpty()) {
       Trace.info("RM::prepare(" + xid + ") voted NO");
       log.write("RM-" + getName() + "\t" + xid + "\tABORT");
+      transaction_file.save(write_list);
       crash(2);
       abort(xid);
       new Timer().schedule(new TimerTask() {
@@ -422,6 +425,7 @@ public class ResourceManager implements IResourceManager {
 
     Trace.info("RM::prepare(" + xid + ") voted YES");
     log.write("RM-" + getName() + "\t" + xid + "\tYES");
+    transaction_file.save(write_list);
     crash(2);
     new Timer().schedule(new TimerTask() {
       @Override
@@ -439,39 +443,42 @@ public class ResourceManager implements IResourceManager {
 
     Trace.info("RM::commit(" + transactionId + ") called");
 
-    synchronized (m_data) {
-      write_list.get(transactionId).forEach((key, item) -> {
-        if (item != null) {
-          writeData(transactionId, key, item);
-          Trace.info("RM::commit(" + transactionId + ") writing " + key + " to database");
-        } else {
-          removeData(transactionId, key);
-          Trace.info("RM::commit(" + transactionId + ") removing " + key + " from database");
+      synchronized (m_data) {
+        if (write_list.get(transactionId) != null && !write_list.get(transactionId).isEmpty()) {
+        write_list.get(transactionId).forEach((key, item) -> {
+          if (item != null) {
+            writeData(transactionId, key, item);
+            Trace.info("RM::commit(" + transactionId + ") writing " + key + " to database");
+          } else {
+            removeData(transactionId, key);
+            Trace.info("RM::commit(" + transactionId + ") removing " + key + " from database");
+          }
+        });
         }
-      });
-      if (master_record.getPointer() == file_A) {
-        file_B.save(m_data);
-        master_record.setPointer(file_B);
-        Trace.info("RM::commit(" + transactionId + ") saved database to file_B");
-      } else {
-        file_A.save(m_data);
-        master_record.setPointer(file_A);
-        Trace.info("RM::commit(" + transactionId + ") saved database to file_A");
+        if (master_record.getPointer() == file_A) {
+          file_B.save(m_data);
+          master_record.setPointer(file_B);
+          Trace.info("RM::commit(" + transactionId + ") saved database to file_B");
+        } else {
+          file_A.save(m_data);
+          master_record.setPointer(file_A);
+          Trace.info("RM::commit(" + transactionId + ") saved database to file_A");
+        }
+        master_record.setId(transactionId);
+        master_record_file.save(master_record);
+        Trace.info("RM::commit(" + transactionId + ") saved master record");
       }
-      master_record.setId(transactionId);
-      master_record_file.save(master_record);
-      Trace.info("RM::commit(" + transactionId + ") saved master record");
-    }
 
-//    if (write_list.get(transactionId) != null) {
-//      write_list.get(transactionId).clear();
-//    }
-//    if (pre_image.get(transactionId) != null) {
-//      pre_image.get(transactionId).clear();
-//    }
+    if (write_list.get(transactionId) != null) {
+      write_list.get(transactionId).clear();
+    }
+    if (pre_image.get(transactionId) != null) {
+      pre_image.get(transactionId).clear();
+    }
 
     if (lockManager.UnlockAll(transactionId)) {
       log.write("RM-" + getName() + "\t" + transactionId + "\tCOMMIT");
+      transaction_file.save(write_list);
       Trace.info("RM::commit(" + transactionId + ") succeeded");
       return true;
     } else {
@@ -485,12 +492,12 @@ public class ResourceManager implements IResourceManager {
 
     Trace.info("RM::abort(" + transactionId + ") called");
 
-//    if (write_list.get(transactionId) != null) {
-//      write_list.get(transactionId).clear();
-//    }
-//    if (pre_image.get(transactionId) != null) {
-//      pre_image.get(transactionId).clear();
-//    }
+    if (write_list.get(transactionId) != null) {
+      write_list.get(transactionId).clear();
+    }
+    if (pre_image.get(transactionId) != null) {
+      pre_image.get(transactionId).clear();
+    }
 
     lockManager.UnlockAll(transactionId);
     log.write("RM-" + getName() + "\t" + transactionId + "\tABORT");
@@ -554,6 +561,15 @@ public class ResourceManager implements IResourceManager {
       file_A.save(m_data);
       file_B.save(m_data);
       Trace.info("RM::initializeFiles() initialized shadow files");
+    }
+
+    Map<Integer, Map<String, RMItem>> load_transactions_from_file = transaction_file.load();
+
+    if (load_transactions_from_file != null) {
+      Trace.info("RM::initializeFiles() loaded transactions from file");
+      write_list = load_transactions_from_file;
+    } else {
+      transaction_file.save(write_list);
     }
   }
 
