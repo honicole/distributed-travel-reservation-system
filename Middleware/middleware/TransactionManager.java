@@ -352,6 +352,10 @@ public class TransactionManager {
 //          prepare(xid);
 //        case ABORTED:
 //          abort(xid);
+        case ABORTING:
+          // call abort on all servers
+        case COMMITTING:
+          // call commit on all
         }
       });
     } catch (Exception e) {
