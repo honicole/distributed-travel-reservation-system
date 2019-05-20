@@ -1,4 +1,6 @@
-# comp512-project
+# distributed-travel-reservation-system
+
+Socket-based distributed system implementing two-phase locking for concurrency control, two-phase commit with shadowing for data persistence and full recovery at the middleware.
 
 To run the RMI resource manager:
 
